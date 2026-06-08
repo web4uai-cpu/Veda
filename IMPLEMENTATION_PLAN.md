@@ -1,14 +1,24 @@
 # IMPLEMENTATION_PLAN.md
 
-# VEDA Build Order & Execution Plan
+# VEDA Master Implementation Plan
 
-Version: 1.0
+Version: 2.0
 
-Status: Master Execution Blueprint
+Status: Authoritative Build Blueprint
+
+Priority: Constitutional
 
 Owner: Platform Architecture Team
 
-Priority: Highest
+Audience:
+
+* GPT-5.5
+* Claude
+* Cursor
+* Cline
+* RooCode
+* Aider
+* Engineering Teams
 
 ---
 
@@ -18,48 +28,41 @@ This document defines:
 
 * Build Order
 * Engineering Phases
-* Dependencies
+* Dependency Graph
 * Milestones
-* Acceptance Criteria
-* Delivery Strategy
+* Acceptance Gates
+* MVP Scope
+* Beta Scope
+* Production Scope
+* Team Scaling Plan
 
-This is the official implementation sequence for VEDA.
-
-No team should build features out of dependency order.
+No component may be built outside the sequence defined here.
 
 ---
 
-# Core Rule
+# North Star
+
+Build the world's most trustworthy AI-powered Sanatan Knowledge Platform.
+
+---
+
+# Constitutional Rules
 
 Never build intelligence before knowledge.
 
-Never build UI before APIs.
-
-Never build APIs before data structures.
-
 Never build reasoning before citations.
 
----
+Never build agents before retrieval.
 
-# Execution Philosophy
+Never build UI before APIs.
 
-Incorrect
+Never optimize before correctness.
 
-```text
-Chat UI
-
-↓
-
-LLM
-
-↓
-
-Hope
-```
+Never prioritize features over architecture.
 
 ---
 
-Correct
+# System Evolution
 
 ```text
 Knowledge
@@ -70,7 +73,7 @@ Retrieval
 
 ↓
 
-Validation
+Citation
 
 ↓
 
@@ -78,992 +81,743 @@ Reasoning
 
 ↓
 
-Experience
-```
-
----
-
-# Build Timeline
-
-Phase 0
-
-Repository Foundation
-
-Phase 1
-
-Knowledge Foundation
-
-Phase 2
-
-Search Platform
-
-Phase 3
-
-Citation Platform
-
-Phase 4
-
-RLM Engine
-
-Phase 5
-
-Agent System
-
-Phase 6
-
-Public APIs
-
-Phase 7
-
-Web Platform
-
-Phase 8
-
-Research Platform
-
-Phase 9
-
-Mobile Platform
-
-Phase 10
-
-Production Scale
-
----
-
-# Dependency Map
-
-```text
-Foundation
-
-↓
-
-Data Model
-
-↓
-
-Ingestion
-
-↓
-
-Graph
-
-↓
-
-Search
-
-↓
-
-Citation Engine
-
-↓
-
-RLM
-
-↓
-
 Agents
 
 ↓
 
-API
+Experience
 
 ↓
 
-Frontend
-
-↓
-
-Mobile
+Scale
 ```
 
 ---
+
+# Global Build Order
+
+```text
+Stage 1
+
+Foundation
+
+↓
+
+Stage 2
+
+Knowledge Engine
+
+↓
+
+Stage 3
+
+Intelligence Engine
+
+↓
+
+Stage 4
+
+Product Experience
+
+↓
+
+Stage 5
+
+Scale & Ecosystem
+```
+
+=================================================
+STAGE 1
+FOUNDATION
+==========
 
 # Phase 0
 
 Repository Foundation
 
-Duration
-
+Duration:
 Week 1
 
-Goal
+Read:
 
-Create development platform.
+MONOREPO_ARCHITECTURE.md
 
----
+DEV_ENV.md
 
-Deliverables
+QUALITY_STANDARDS.md
 
-Monorepo
+PROMPT_ENGINEERING_GUIDE.md
 
-```text
-Turborepo
+Deliverables:
 
-pnpm
+* Turborepo
+* pnpm
+* TypeScript
+* CI/CD
+* Docker
+* Git Hooks
+* Storybook
+* Test Framework
 
-TypeScript
-```
+Acceptance:
 
----
-
-Applications
-
-```text
-apps/web
-
-apps/admin
-```
-
----
-
-Services
-
-```text
-api
-
-search
-
-graph
-
-ingestion
-```
-
----
-
-Packages
-
-```text
-ui
-
-types
-
-api-client
-```
-
----
-
-Infrastructure
-
-```text
-docker
-
-terraform
-
-github-actions
-```
-
----
-
-Acceptance Criteria
-
-* Monorepo operational
-* CI/CD operational
-* Local environment operational
+* CI Passing
+* Local Development Working
+* Repository Standards Enforced
 
 ---
 
 # Phase 1
 
-Knowledge Foundation
+Infrastructure Foundation
 
-Duration
+Duration:
+Week 1–2
 
-Week 2-4
+Read:
 
-Goal
+INFRASTRUCTURE_ARCHITECTURE.md
 
-Create canonical knowledge layer.
+DEPLOYMENT_ARCHITECTURE.md
 
----
+OBSERVABILITY.md
 
-Deliverables
+Deliverables:
 
-PostgreSQL Schema
+* Terraform
+* Kubernetes
+* Secrets
+* Monitoring
+* Logging
+* Tracing
 
-Neo4j Schema
+Acceptance:
 
-Qdrant Collections
+* Local Cluster Operational
+* Cloud Deployment Operational
 
-Elasticsearch Indexes
-
----
-
-Implement
-
-DATA_MODEL.md
-
-KNOWLEDGE_GRAPH.md
-
----
-
-Acceptance Criteria
-
-* Database migrations working
-* Graph model deployed
-* Vector collections created
-
----
+=================================================
+STAGE 2
+KNOWLEDGE ENGINE
+================
 
 # Phase 2
 
-Knowledge Ingestion Platform
+Data Layer
 
-Duration
+Duration:
+Week 2–4
 
-Week 4-7
+Read:
 
-Goal
+DATA_MODEL.md
 
-Import trusted knowledge.
+Deliverables:
 
----
+PostgreSQL
 
-Deliverables
+* Users
+* Scriptures
+* Citations
+* Uploads
 
-Document Pipeline
+Neo4j
 
-OCR Pipeline
+* Nodes
+* Relationships
 
-Metadata Pipeline
+Qdrant
 
-Embedding Pipeline
+* Vectors
 
-Graph Builder
+Elasticsearch
 
----
+* Search Indexes
 
-Implement
+Acceptance:
 
-INGESTION_PIPELINE.md
-
----
-
-Priority Sources
-
-1.
-
-Bhagavad Gita
-
----
-
-2.
-
-Principal Upanishads
-
----
-
-3.
-
-Rigveda Samples
-
----
-
-Acceptance Criteria
-
-* Import successful
-* Citations generated
-* Graph nodes created
+* Migrations Passing
+* Databases Operational
 
 ---
 
 # Phase 3
 
-Search Platform
+Ontology Foundation
 
-Duration
+Duration:
+Week 4–6
 
-Week 7-9
+Read:
 
-Goal
+KNOWLEDGE_GRAPH.md
 
-Knowledge retrieval.
+RELATIONSHIP_SCHEMA.md
 
----
+All Ontology Documents
 
-Implement
+Deliverables:
 
-Hybrid Search
+* Graph Models
+* Ontology Services
+* Validation Engine
+* Ontology Registry
 
-Semantic Search
+Acceptance:
 
-Graph Search
-
----
-
-Services
-
-search-service
-
-graph-service
-
----
-
-Acceptance Criteria
-
-Query
-
-```text
-Moksha
-```
-
-Returns
-
-* Concepts
-* Verses
-* Commentaries
-
-under 1 second.
+* Graph Validation 100%
 
 ---
 
 # Phase 4
 
-Citation Engine
+Scripture Foundation
 
-Duration
+Duration:
+Week 6–8
 
-Week 9-10
+Read:
 
-Goal
+VEDAS.md
 
-Trust layer.
+UPANISHADS.md
 
----
+GITA.md
 
-Implement
+RAMAYANA.md
 
-CITATION_ENGINE.md
+MAHABHARATA.md
 
----
+PURANAS.md
 
-Capabilities
+Deliverables:
 
-Source Validation
+* Canonical Scripture Registry
+* Verse Registry
+* Citation Formats
+* Scripture APIs
 
-Confidence Scoring
+Priority Corpus:
 
-Hallucination Detection
+1. Bhagavad Gita
+2. Principal Upanishads
+3. Rigveda Samples
+4. Ramayana
+5. Mahabharata
 
-Citation Ranking
+Acceptance:
 
----
-
-Acceptance Criteria
-
-Every answer traceable.
+* Canonical Corpus Registered
 
 ---
 
 # Phase 5
 
-RLM Engine
+Ingestion Pipeline
 
-Duration
+Duration:
+Week 8–11
 
-Week 10-12
+Read:
 
-Goal
+INGESTION_PIPELINE.md
 
-Evidence-driven intelligence.
+SCRIPTURE_INGESTION_STANDARDS.md
 
----
+Deliverables:
 
-Implement
+* PDF Upload
+* EPUB Upload
+* OCR
+* Metadata Extraction
+* Chunking
+* Embeddings
+* Graph Builders
 
-RLM_ARCHITECTURE.md
+Acceptance:
 
----
+Upload → Search → Citation → Graph
 
-Components
-
-Intent Detection
-
-Evidence Collection
-
-Graph Expansion
-
-Reasoning Inputs
-
----
-
-Acceptance Criteria
-
-Evidence packets generated correctly.
-
----
+=================================================
+STAGE 3
+INTELLIGENCE ENGINE
+===================
 
 # Phase 6
 
-Reasoning Engine
+Search Platform
 
-Duration
+Duration:
+Week 11–13
 
-Week 12-14
+Read:
 
-Goal
+SEARCH_ARCHITECTURE.md
 
-Transform evidence into understanding.
+Deliverables:
 
----
+* Vector Search
+* Graph Search
+* Keyword Search
+* Hybrid Search
+* Re-ranking
 
-Implement
+Acceptance:
 
-REASONING_ENGINE.md
-
----
-
-Capabilities
-
-Explanation
-
-Comparison
-
-Analysis
-
-Research
-
----
-
-Acceptance Criteria
-
-Scholar mode operational.
+Sub-second retrieval.
 
 ---
 
 # Phase 7
 
-Agent Runtime
+Citation Engine
 
-Duration
+Duration:
+Week 13–14
 
-Week 14-16
+Read:
 
-Goal
+CITATION_ENGINE.md
 
-Multi-agent intelligence.
+SOURCE_HIERARCHY.md
 
----
+Deliverables:
 
-Implement
+* Source Ranking
+* Confidence Scoring
+* Citation Validation
+* Evidence Verification
 
-AGENTS.md
+Acceptance:
 
----
-
-Initial Agents
-
-Veda Agent
-
-Upanishad Agent
-
-Graph Agent
-
-Citation Agent
-
----
-
-Later
-
-Purana Agent
-
-Research Agent
-
-Upload Agent
-
----
-
-Acceptance Criteria
-
-Multi-agent orchestration working.
+100% traceable answers.
 
 ---
 
 # Phase 8
 
-Public API Platform
+RLM Engine
 
-Duration
+Duration:
+Week 14–16
 
-Week 16-18
+Read:
 
-Goal
+RLM_ARCHITECTURE.md
 
-Expose system capabilities.
+Deliverables:
 
----
+* Retrieval Planner
+* Evidence Collector
+* Graph Expansion
+* Context Builder
 
-Implement
+Acceptance:
 
-API_SPEC.md
-
----
-
-Endpoints
-
-Search
-
-Chat
-
-Graph
-
-Research
-
-Upload
-
----
-
-Acceptance Criteria
-
-OpenAPI generated.
+Evidence Packets Generated Correctly.
 
 ---
 
 # Phase 9
 
-Design System
+Reasoning Engine
 
-Duration
+Duration:
+Week 16–18
 
-Week 18-19
+Read:
 
-Goal
+REASONING_ENGINE.md
 
-Visual consistency.
+MASTER_SYSTEM_PROMPT.md
 
----
+Deliverables:
 
-Implement
+* Comparative Reasoning
+* Scholar Mode
+* Research Mode
+* Explanation Engine
 
-DESIGN_SYSTEM.md
+Acceptance:
 
----
-
-Deliverables
-
-Tokens
-
-Components
-
-Typography
-
-Dark Mode
-
----
-
-Acceptance Criteria
-
-Storybook operational.
+Evidence-backed reasoning.
 
 ---
 
 # Phase 10
 
-Frontend Platform
+Agent Runtime
 
-Duration
+Duration:
+Week 18–20
 
-Week 19-24
+Read:
 
-Goal
+AGENTS.md
 
-User experience.
+All Agent Specifications
 
----
+Deliverables:
 
-Implement
+* Orchestrator
+* Message Bus
+* Agent Registry
+* Tool Registry
 
-FRONTEND_ARCHITECTURE.md
+Initial Agents:
 
-UX_ARCHITECTURE.md
+* Veda Agent
+* Graph Agent
+* Citation Agent
+* Research Agent
+* Sanskrit Agent
 
----
+Acceptance:
 
-Priority Screens
+Multi-agent orchestration working.
 
-1.
-
-Explore
-
-2.
-
-Concept
-
-3.
-
-Scripture
-
-4.
-
-Ask
-
-5.
-
-Graph
-
----
-
-Acceptance Criteria
-
-Core navigation complete.
-
----
+=================================================
+STAGE 4
+PRODUCT EXPERIENCE
+==================
 
 # Phase 11
 
-Knowledge Graph Experience
+Public API Platform
 
-Duration
+Duration:
+Week 20–22
 
-Week 24-26
+Read:
 
-Goal
+API_SPEC.md
 
-Create VEDA's signature feature.
+Deliverables:
 
----
+* REST APIs
+* WebSockets
+* Streaming APIs
+* OpenAPI Specs
 
-Deliverables
+Acceptance:
 
-Interactive Graph
-
-Concept Exploration
-
-Graph Search
-
-Graph Expansion
-
----
-
-Acceptance Criteria
-
-User can navigate concepts visually.
+API Coverage Complete
 
 ---
 
 # Phase 12
 
-Research Workspace
+Design System
 
-Duration
+Duration:
+Week 22–23
 
-Week 26-28
+Read:
 
-Goal
+DESIGN_SYSTEM.md
 
-Scholar platform.
+Deliverables:
 
----
+* Tokens
+* Components
+* Typography
+* Dark Mode
+* Accessibility
 
-Deliverables
+Acceptance:
 
-Research Reports
-
-Comparative Analysis
-
-Evidence Matrix
-
-Export
-
----
-
-Acceptance Criteria
-
-Research mode complete.
+Storybook Complete
 
 ---
 
 # Phase 13
 
-Personal Knowledge Layer
+Frontend MVP
 
-Duration
+Duration:
+Week 23–28
 
-Week 28-30
+Read:
 
-Goal
+UX_ARCHITECTURE.md
 
-User-owned knowledge.
+FRONTEND_ARCHITECTURE.md
 
----
+APP_FLOW.md
 
-Deliverables
+Deliverables:
 
-Uploads
+* Ask VEDA
+* Search
+* Scripture Reader
+* Daily Verse
+* Uploads
 
-Collections
+Acceptance:
 
-Notes
-
-Bookmarks
-
----
-
-Acceptance Criteria
-
-Uploads linked into graph.
+End-to-end workflow operational.
 
 ---
 
 # Phase 14
 
-Authentication & Accounts
+Knowledge Map
 
-Duration
+Duration:
+Week 28–30
 
-Week 30-31
+Deliverables:
 
-Goal
+* Concept Graph
+* Person Graph
+* Tradition Graph
+* Timeline Graph
 
-Identity platform.
+Acceptance:
 
----
-
-Deliverables
-
-OAuth
-
-JWT
-
-Profiles
-
-Preferences
-
----
-
-Acceptance Criteria
-
-User system complete.
+Interactive exploration complete.
 
 ---
 
 # Phase 15
 
-Mobile Platform
+Research Workspace
 
-Duration
+Duration:
+Week 30–32
 
-Week 31-36
+Deliverables:
 
-Goal
+* Scholar Mode
+* Comparative Analysis
+* Source Explorer
+* Citation Explorer
 
-Mobile-first learning.
+Acceptance:
 
----
-
-Deliverables
-
-React Native App
-
-Offline Reading
-
-Bookmarks
-
-Daily Learning
-
----
-
-Acceptance Criteria
-
-Android and iOS builds operational.
+Research workflows complete.
 
 ---
 
 # Phase 16
 
-Production Infrastructure
+Learning Platform
 
-Duration
+Duration:
+Week 32–34
 
-Week 36-40
+Read:
 
-Goal
+PRACTICE_ONTOLOGY.md
 
-Scale.
+learning_agent.md
 
----
+DAILY_VERSE.md
 
-Deliverables
+Deliverables:
 
-Kubernetes
+* Learning Paths
+* Knowledge Trails
+* Daily Learning
+* Practice Guidance
 
-Monitoring
+Acceptance:
 
-Backups
+Learning platform operational.
 
-Observability
-
----
-
-Acceptance Criteria
-
-Production cluster deployed.
-
----
+=================================================
+STAGE 5
+SCALE & ECOSYSTEM
+=================
 
 # Phase 17
 
-Beta Launch
+Authentication
 
-Duration
+Duration:
+Week 34–35
 
-Week 40
+Deliverables:
 
-Goal
+* OAuth
+* JWT
+* Profiles
+* Preferences
 
-First public users.
+Acceptance:
 
----
-
-Included
-
-Bhagavad Gita
-
-10 Upanishads
-
-Knowledge Graph
-
-Research Mode
-
-Scholar Mode
-
-Uploads
-
----
-
-Not Included
-
-Advanced Sanskrit Engine
-
-Voice
-
-Community Features
+Identity Platform Complete
 
 ---
 
 # Phase 18
 
-Scale Expansion
+Mobile Platform
 
-Duration
+Duration:
+Week 35–40
 
-Month 12+
+Read:
 
-Goal
+MOBILE_APP.md
 
-Expand knowledge universe.
+Deliverables:
 
----
+* React Native
+* Offline Reading
+* Widgets
+* Notifications
 
-Add
+Acceptance:
 
-Vedas
-
-Puranas
-
-Ramayana
-
-Mahabharata
-
-Traditional Commentaries
+Android + iOS Production Builds
 
 ---
 
-# Recommended Team Structure
+# Phase 19
 
-Phase 1-6
+Security Hardening
 
-2 Engineers
+Duration:
+Week 40–41
 
-1 AI Engineer
+Read:
 
----
+SECURITY_ARCHITECTURE.md
 
-Phase 7-12
+AUTH.md
 
-4 Engineers
+RATE_LIMITS.md
 
-1 Designer
+Acceptance:
 
-1 AI Engineer
-
----
-
-Phase 13+
-
-6-10 Engineers
-
-2 AI Engineers
-
-1 Product Designer
-
-1 DevOps Engineer
+Security Audit Passed
 
 ---
 
-# Delivery Priority
+# Phase 20
 
-Critical Path
+Production Readiness
+
+Duration:
+Week 41–43
+
+Read:
+
+PRODUCTION.md
+
+BACKUP_RECOVERY.md
+
+DISASTER_RECOVERY.md
+
+OBSERVABILITY.md
+
+Deliverables:
+
+* Production Cluster
+* Backups
+* Monitoring
+* DR Validation
+
+Acceptance:
+
+Launch Ready
 
 ---
 
-# MVP Definition
+# Phase 21
 
-MVP Must Include
+Beta Launch
+
+Duration:
+Week 44
+
+Includes:
 
 * Bhagavad Gita
 * 10 Principal Upanishads
-* Search
-* Concept Pages
-* Citation Engine
-* Scholar Mode
 * Knowledge Graph
 * Ask VEDA
+* Scholar Mode
+* Research Mode
+* Uploads
 
----
-
-MVP Must Not Include
+Excludes:
 
 * Voice
-* Community Contributions
-* Temple Database
-* Festivals
-* Public APIs
-* Debate Engine
+* Community
+* Courses
+* Marketplace
 
----
+=================================================
+MVP DEFINITION
+==============
 
-# Definition of Success
+Must Include:
+
+* Ask VEDA
+* Search
+* Citations
+* Bhagavad Gita
+* 10 Upanishads
+* Knowledge Graph
+* Daily Verse
+* User Uploads
+
+Must Exclude:
+
+* Voice Assistant
+* Social Features
+* Marketplace
+* Public Community Editing
+
+=================================================
+TEAM SCALING
+============
+
+Stage 1–2
+
+* 2 Full Stack Engineers
+* 1 AI Engineer
+
+Stage 3–4
+
+* 4 Engineers
+* 1 AI Engineer
+* 1 Product Designer
+
+Stage 5
+
+* 6–10 Engineers
+* 2 AI Engineers
+* 1 DevOps Engineer
+* 1 Product Designer
+
+=================================================
+SUCCESS CRITERIA
+================
 
 A user asks:
 
-```text
-What is Moksha?
-```
+"What is Moksha?"
 
-The system can:
+VEDA can:
 
-1. Retrieve scripture evidence.
+1. Retrieve scripture evidence
+2. Expand graph relationships
+3. Compare traditions
+4. Show citations
+5. Explain clearly
+6. Link learning paths
+7. Recommend practices
 
-2. Expand related concepts.
+Within a few seconds.
 
-3. Show graph relationships.
+=================================================
+MISSION
+=======
 
-4. Compare interpretations.
-
-5. Display citations.
-
-6. Explain clearly.
-
-7. Link deeper study paths.
-
-All within a few seconds.
-
----
-
-# Build Mission
-
-VEDA should be built in dependency order, not feature order.
+VEDA must be built in dependency order, not feature order.
 
 Knowledge first.
 
@@ -1073,6 +827,5 @@ Reasoning third.
 
 Experience fourth.
 
-Scale fifth.
+Scale last.
 
-This sequence minimizes technical debt, maximizes retrieval quality, and creates a foundation capable of supporting millions of users and millions of knowledge relationships over time.

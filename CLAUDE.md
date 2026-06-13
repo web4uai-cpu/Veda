@@ -140,12 +140,13 @@ Every AI-generated answer MUST include:
 - Citation Agent has VETO AUTHORITY — can reject any response
 - Contradictory views are BOTH returned (no forced merge)
 
-## Current Phase: 0 ✅ → Starting Phase 1
+## Current Phase: 2 — Data Layer (in progress)
 
 ### Completed
 - Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
+- Phase 1: Docs reorganization, database migrations, Neo4j schema, Qdrant setup
+- Phase 2: Database connections, API routers, Pydantic models, Gita ingestion
 
 ### Next Up
-- Phase 1: Infrastructure foundation, docs reorganization, Supabase setup
-- Phase 2: Data layer (PostgreSQL migrations, Prisma)
-- Phase 3: Knowledge Graph (Neo4j schema, ontology)
+- Phase 3: Knowledge Graph (Neo4j schema, ontology seeding)
+- Phase 4: Scripture Content (full Bhagavad Gita ingestion)

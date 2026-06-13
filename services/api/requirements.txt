@@ -1,15 +1,20 @@
+# VEDA API — Python Dependencies
+# Phase 2: Data Layer
+
+# --- Web Framework ---
 fastapi>=0.115.0
 uvicorn[standard]>=0.34.0
 pydantic>=2.10.0
 python-dotenv>=1.0.0
 httpx>=0.28.0
 
-# LLM — via OpenRouter
+# --- LLM (OpenRouter) ---
 openai>=1.60.0
 
-# Database drivers (Phase 2+)
-# asyncpg>=0.30.0
-# neo4j>=5.27.0
-# qdrant-client>=1.13.0
-# opensearch-py>=2.8.0
-# redis>=5.2.0
+# --- Database Drivers ---
+asyncpg>=0.30.0
+neo4j>=5.27.0
+redis>=5.2.0
+
+# --- Utilities ---
+orjson>=3.10.0

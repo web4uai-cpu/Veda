@@ -4,72 +4,147 @@ VEDA API Gateway — FastAPI Application
 The central API gateway for the VEDA Knowledge Operating System.
 
 Architecture Layer: Layer 2 — API Gateway (per SYSTEM_ARCHITECTURE.md)
-Responsibilities: Authentication, Routing, Rate Limiting, Logging, Metrics
+Phase: 2 — Data Layer
 
-Endpoints:
-  /api/v1/health     — Health check
-  /api/v1/search     — Hybrid search (Phase 6)
-  /api/v1/chat       — Ask VEDA / Chat (Phase 9)
-  /api/v1/graph      — Knowledge graph (Phase 3)
-  /api/v1/upload     — Document upload (Phase 5)
-  /api/v1/research   — Research reports (Phase 9)
-  /api/v1/scriptures — Scripture browsing (Phase 4)
+Lifecycle:
+    startup  → connect to PostgreSQL, Neo4j, Redis
+    shutdown → close all connections gracefully
+
+Middleware:
+    1. CORS
+    2. Correlation ID injection
+    3. Request logging with duration
+    4. Error handler (VedaError → JSON)
 """
 
-from datetime import datetime, timezone
+from __future__ import annotations
+
+import logging
+import sys
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(
-    title="VEDA API",
-    description="Knowledge Operating System for Sanatan Dharma",
-    version="0.1.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+from config import settings
+from core.middleware import (
+    CorrelationIdMiddleware,
+    RequestLoggingMiddleware,
+    ErrorHandlerMiddleware,
+)
+from routers.health import router as health_router
+from routers.scriptures import router as scripture_router, verse_router
+
+# =============================================================================
+# LOGGING
+# =============================================================================
+
+logging.basicConfig(
+    level=logging.DEBUG if settings.debug else logging.INFO,
+    format="%(asctime)s  %(levelname)-8s  %(name)-24s  %(message)s",
+    datefmt="%H:%M:%S",
+    stream=sys.stdout,
 )
 
-# CORS — Allow web app and mobile app
+logger = logging.getLogger("veda.api")
+
+
+# =============================================================================
+# LIFESPAN (startup/shutdown)
+# =============================================================================
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Application lifecycle manager.
+    Connects to databases on startup, closes on shutdown.
+    Gracefully handles missing services (logs warning, continues).
+    """
+    logger.info("=" * 60)
+    logger.info("VEDA API v0.2.0 starting — Phase 2: Data Layer")
+    logger.info("=" * 60)
+
+    # --- Startup ---
+    from db.postgres import init_postgres, close_postgres
+    from db.neo4j_client import init_neo4j, close_neo4j
+    from db.redis_client import init_redis, close_redis
+
+    # PostgreSQL
+    try:
+        await init_postgres()
+        logger.info("✅  PostgreSQL connected")
+    except Exception as e:
+        logger.warning("⚠️  PostgreSQL not available: %s", e)
+
+    # Neo4j
+    try:
+        await init_neo4j()
+        logger.info("✅  Neo4j connected")
+    except Exception as e:
+        logger.warning("⚠️  Neo4j not available: %s", e)
+
+    # Redis
+    try:
+        await init_redis()
+        logger.info("✅  Redis connected")
+    except Exception as e:
+        logger.warning("⚠️  Redis not available: %s", e)
+
+    logger.info("🚀  VEDA API ready at http://localhost:8000")
+    logger.info("📖  Docs at http://localhost:8000/docs")
+
+    yield
+
+    # --- Shutdown ---
+    logger.info("Shutting down VEDA API...")
+
+    try:
+        await close_postgres()
+    except Exception:
+        pass
+    try:
+        await close_neo4j()
+    except Exception:
+        pass
+    try:
+        await close_redis()
+    except Exception:
+        pass
+
+    logger.info("VEDA API stopped")
+
+
+# =============================================================================
+# APP
+# =============================================================================
+
+app = FastAPI(
+    title="VEDA API",
+    description="Knowledge Operating System for Sanatan Dharma — REST API Gateway",
+    version="0.2.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    lifespan=lifespan,
+)
+
+# --- Middleware (order matters: last added = first executed) ---
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",  # Next.js dev
-        "http://localhost:3001",  # Admin dev
-    ],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Correlation-ID", "X-Response-Time"],
 )
 
+app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
 
-@app.get("/api/v1/health")
-async def health_check():
-    """
-    Health check endpoint.
-    Returns platform status and service readiness.
-    """
-    return {
-        "status": "healthy",
-        "platform": "VEDA",
-        "version": "0.1.0",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "services": {
-            "api": "operational",
-            "database": "not_connected",
-            "neo4j": "not_connected",
-            "qdrant": "not_connected",
-            "opensearch": "not_connected",
-            "redis": "not_connected",
-        },
-        "phase": "0 — Foundation",
-    }
+# --- Routers ---
 
-
-@app.get("/")
-async def root():
-    """Root endpoint — API information."""
-    return {
-        "name": "VEDA API",
-        "description": "Knowledge Operating System for Sanatan Dharma",
-        "docs": "/docs",
-        "health": "/api/v1/health",
-    }
+app.include_router(health_router)
+app.include_router(scripture_router)
+app.include_router(verse_router)

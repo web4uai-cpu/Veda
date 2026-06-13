@@ -1,0 +1,10 @@
+{
+  "name": "@veda/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Use: cd services/api && python -m uvicorn main:app --reload'",
+    "lint": "echo 'Use: cd services/api && ruff check .'",
+    "typecheck": "echo 'Use: cd services/api && mypy .'"
+  }
+}

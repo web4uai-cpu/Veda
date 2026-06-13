@@ -1,0 +1,122 @@
+/* =============================================================================
+ * VEDA Design Tokens — CSS Custom Properties
+ * =============================================================================
+ * Import this file in your global CSS to use tokens as CSS variables.
+ * Usage: var(--veda-color-saffron-500)
+ * ========================================================================== */
+
+:root {
+  /* --- Colors: Saffron (Primary) --- */
+  --veda-color-saffron-50: #FFF8F0;
+  --veda-color-saffron-100: #FFECD4;
+  --veda-color-saffron-200: #FFD6A5;
+  --veda-color-saffron-300: #FFBC6B;
+  --veda-color-saffron-400: #E8A23C;
+  --veda-color-saffron-500: #C97A24;
+  --veda-color-saffron-600: #A8621A;
+  --veda-color-saffron-700: #874D14;
+  --veda-color-saffron-800: #6B3D10;
+  --veda-color-saffron-900: #4A2A0C;
+
+  /* --- Colors: Indigo (Secondary) --- */
+  --veda-color-indigo-50: #EEF2F7;
+  --veda-color-indigo-100: #D4DEEB;
+  --veda-color-indigo-200: #A9BDDB;
+  --veda-color-indigo-300: #7E9CCB;
+  --veda-color-indigo-400: #5478AE;
+  --veda-color-indigo-500: #3A5E94;
+  --veda-color-indigo-600: #243B63;
+  --veda-color-indigo-700: #1C2F50;
+  --veda-color-indigo-800: #14233D;
+  --veda-color-indigo-900: #0C1729;
+
+  /* --- Colors: Neutral --- */
+  --veda-color-neutral-50: #F9FAFB;
+  --veda-color-neutral-100: #F8F5EF;
+  --veda-color-neutral-200: #F0ECE3;
+  --veda-color-neutral-300: #E5E0D5;
+  --veda-color-neutral-400: #C8C2B4;
+  --veda-color-neutral-500: #9B9588;
+  --veda-color-neutral-600: #6B7280;
+  --veda-color-neutral-700: #4B5563;
+  --veda-color-neutral-800: #374151;
+  --veda-color-neutral-900: #1F2937;
+  --veda-color-neutral-950: #111827;
+
+  /* --- Colors: Semantic --- */
+  --veda-color-success: #0F8A5F;
+  --veda-color-warning: #D97706;
+  --veda-color-error: #B91C1C;
+  --veda-color-info: #2563EB;
+
+  /* --- Semantic Aliases --- */
+  --veda-bg: var(--veda-color-neutral-100);
+  --veda-surface: #FFFFFF;
+  --veda-text: var(--veda-color-neutral-900);
+  --veda-text-secondary: var(--veda-color-neutral-600);
+  --veda-primary: var(--veda-color-saffron-500);
+  --veda-secondary: var(--veda-color-indigo-600);
+  --veda-border: var(--veda-color-neutral-300);
+
+  /* --- Typography --- */
+  --veda-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --veda-font-devanagari: 'Noto Sans Devanagari', 'Mukta', sans-serif;
+  --veda-font-serif: 'Cormorant Garamond', Georgia, serif;
+  --veda-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --veda-text-xs: 0.75rem;
+  --veda-text-sm: 0.875rem;
+  --veda-text-base: 1rem;
+  --veda-text-lg: 1.125rem;
+  --veda-text-xl: 1.25rem;
+  --veda-text-2xl: 1.5rem;
+  --veda-text-3xl: 1.875rem;
+  --veda-text-4xl: 2.25rem;
+  --veda-text-5xl: 3rem;
+
+  /* --- Spacing --- */
+  --veda-space-1: 0.25rem;
+  --veda-space-2: 0.5rem;
+  --veda-space-3: 0.75rem;
+  --veda-space-4: 1rem;
+  --veda-space-6: 1.5rem;
+  --veda-space-8: 2rem;
+  --veda-space-12: 3rem;
+  --veda-space-16: 4rem;
+
+  /* --- Radii --- */
+  --veda-radius-sm: 8px;
+  --veda-radius-md: 12px;
+  --veda-radius-lg: 16px;
+  --veda-radius-card: 20px;
+  --veda-radius-full: 9999px;
+
+  /* --- Shadows (subtle only) --- */
+  --veda-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --veda-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --veda-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.10);
+  --veda-shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
+
+  /* --- Transitions --- */
+  --veda-transition-fast: 150ms ease;
+  --veda-transition-normal: 250ms ease;
+  --veda-transition-slow: 350ms ease;
+
+  /* --- Layout --- */
+  --veda-max-width: 1400px;
+  --veda-sidebar-width: 280px;
+  --veda-sidebar-collapsed: 72px;
+  --veda-header-height: 64px;
+}
+
+/* --- Dark Mode --- */
+[data-theme="dark"],
+.dark {
+  --veda-bg: #111827;
+  --veda-surface: #1F2937;
+  --veda-text: #F9FAFB;
+  --veda-text-secondary: #9CA3AF;
+  --veda-primary: #D28D3A;
+  --veda-secondary: #5478AE;
+  --veda-border: #374151;
+}

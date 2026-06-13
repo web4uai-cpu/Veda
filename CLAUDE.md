@@ -1,1016 +1,151 @@
-# CLAUDE.md
+# VEDA — Project Memory
 
-# VEDA AI Development Constitution
+> This file is the single source of truth for AI assistants working on this codebase.
+> Read this FIRST before making any changes.
 
-Version: 1.0
+## Identity
 
-Status: Mandatory
+**VEDA** is a Knowledge Operating System for Sanatan Dharma. It is NOT a chatbot, NOT a social network, NOT a productivity app. It is a **research platform** combining ancient scriptures with modern AI.
 
-Priority: Highest
+## Constitutional Rules (NEVER VIOLATE)
 
-Applies To:
+1. **Never build intelligence before knowledge** — Graph/data layer must exist before any AI
+2. **Never build reasoning before citations** — Citation engine before LLM reasoning
+3. **Never build agents before retrieval** — Search infrastructure before agent system
+4. **Never build UI before APIs** — Backend endpoints before frontend pages
+5. **Never optimize before correctness** — Correct first, fast second
+6. **Never prioritize features over architecture** — Foundation before features
 
-* Claude Code
-* GPT-5.5
-* Cursor
-* Cline
-* RooCode
-* Aider
-* OpenHands
-* Continue
-* Copilot Workspace
+## Architecture North Star
 
-This document governs all code generation inside the VEDA repository.
-
----
-
-# Mission
-
-Build the world's most trusted knowledge platform for Sanatan Dharma.
-
-VEDA is:
-
-* Knowledge Graph Platform
-* Research Platform
-* Scripture Intelligence System
-* Citation-First AI System
-* Multi-Agent Knowledge Network
-
-VEDA is not:
-
-* Generic Chatbot
-* AI Wrapper
-* Traditional RAG Application
-
----
-
-# Before Writing Code
-
-Read the following files in order:
-
-1.
-
-PRODUCT_VISION.md
-
----
-
-2.
-
-ROADMAP.md
-
----
-
-3.
-
-SYSTEM_ARCHITECTURE.md
-
----
-
-4.
-
-KNOWLEDGE_GRAPH.md
-
----
-
-5.
-
-DATA_MODEL.md
-
----
-
-6.
-
-RLM_ARCHITECTURE.md
-
----
-
-7.
-
-AGENTS.md
-
----
-
-8.
-
-API_SPEC.md
-
----
-
-9.
-
-INGESTION_PIPELINE.md
-
----
-
-10.
-
-CITATION_ENGINE.md
-
----
-
-11.
-
-REASONING_ENGINE.md
-
----
-
-12.
-
-MASTER_SYSTEM_PROMPT.md
-
----
-
-13.
-
-UX_ARCHITECTURE.md
-
----
-
-14.
-
-DESIGN_SYSTEM.md
-
----
-
-15.
-
-FRONTEND_ARCHITECTURE.md
-
----
-
-16.
-
-MONOREPO_ARCHITECTURE.md
-
----
-
-17.
-
-IMPLEMENTATION_PLAN.md
-
----
-
-# Authority Hierarchy
-
-When documents conflict:
-
-Priority Order
-
-```text
-IMPLEMENTATION_PLAN
-
-↓
-
-MONOREPO_ARCHITECTURE
-
-↓
-
-SYSTEM_ARCHITECTURE
-
-↓
-
-DATA_MODEL
-
-↓
-
-API_SPEC
-
-↓
-
-Everything Else
+```
+Knowledge Graph (Neo4j) → Retrieval (Qdrant + OpenSearch) → Citation (PostgreSQL) → Reasoning (LLM/RLM) → Agents → Experience (UI)
 ```
 
-Never invent architecture.
+## Tech Stack (Locked)
 
-Always follow documented architecture.
+| Layer | Technology | Version |
+|---|---|---|
+| Frontend | Next.js (App Router) | 15 |
+| UI Library | React | 19 |
+| Styling | Tailwind CSS | 3.4+ |
+| State | Zustand (client), TanStack Query (server) | 5+, 5+ |
+| Backend | FastAPI (Python) | 0.115+ |
+| Auth + DB + Storage | Supabase | latest |
+| Knowledge Graph | Neo4j Community | 5 |
+| Vector Search | Qdrant | latest |
+| Full-Text Search | OpenSearch | 2 |
+| Cache | Redis | 7 |
+| LLM Gateway | OpenRouter | — |
+| LLM Primary | GPT-5.5 | — |
+| LLM Fallback | Claude | — |
+| Embeddings | OpenAI text-embedding-3-large | 3072-dim |
+| Events | Kafka (Redis Streams for dev) | — |
+| Monorepo | Turborepo + pnpm | 2.5+, 9+ |
+| Language | TypeScript (frontend), Python (backend) | 5.8+, 3.12+ |
+| Infrastructure | Docker (MVP), AWS EKS (production) | — |
 
----
+## Monorepo Structure
 
-# Repository Structure
-
-Never create new top-level folders.
-
-Allowed
-
-```text
-apps/
-
-services/
-
-packages/
-
-infrastructure/
-
-tools/
-
-docs/
+```
+veda/
+├── apps/web/              → Next.js 15 main application
+├── services/api/          → FastAPI gateway (Python)
+├── packages/types/        → @veda/types — shared TypeScript types
+├── packages/design-tokens/ → @veda/design-tokens — colors, fonts, spacing
+├── docs/                  → Architecture & specification documents
+├── infrastructure/        → Terraform, Kubernetes, Docker
+├── tools/                 → Generators, scripts
+├── turbo.json
+├── pnpm-workspace.yaml
+├── docker-compose.yml
+└── ADR.md                 → 18 Architecture Decision Records
 ```
 
----
+## ID Strategy
 
-Forbidden
+All entities use **ULID** with type prefixes:
 
-```text
-backend/
-
-frontend/
-
-misc/
-
-temp/
-
-new-version/
+```
+usr_ = User         scp_ = Scripture    bok_ = Book
+chp_ = Chapter      vrs_ = Verse        cpt_ = Concept
+prs_ = Person       dei_ = Deity        evt_ = Event
+plc_ = Place        com_ = Commentary   upl_ = Upload
+nts_ = Note         rpt_ = Report       col_ = Collection
 ```
 
----
-
-# Architectural Rules
-
-Rule 1
-
-Feature-first organization.
-
----
-
-Rule 2
-
-Domain-driven design.
-
----
-
-Rule 3
-
-Service boundaries are mandatory.
-
----
-
-Rule 4
-
-No cross-service database access.
-
----
-
-Rule 5
-
-Communication through APIs/events only.
-
----
-
-# Build Order
-
-Always follow:
-
-```text
-Foundation
-
-↓
-
-Data
-
-↓
-
-Ingestion
-
-↓
-
-Graph
-
-↓
-
-Search
-
-↓
-
-Citation
-
-↓
-
-RLM
-
-↓
-
-Agents
-
-↓
-
-API
-
-↓
-
-Frontend
+IDs are branded TypeScript types — use them for type safety:
+```typescript
+import type { UserId, VerseId, ConceptId } from '@veda/types';
 ```
 
-Never build later phases first.
+## Design System (NEVER DEVIATE)
 
----
+- **Primary:** Saffron `#C97A24` — actions, highlights, brand
+- **Secondary:** Deep Indigo `#243B63` — knowledge, headers, navigation
+- **Background:** `#F8F5EF` (light), `#111827` (dark)
+- **Fonts:** Inter (UI), Noto Sans Devanagari (Sanskrit), Cormorant Garamond (scripture titles)
+- **Color ratio:** 70% neutral, 20% indigo, 10% saffron
+- **Radii:** sm=8px, md=12px, lg=16px, card=20px
+- **Shadows:** Subtle ONLY — no dramatic elevation
+- **CSS classes:** `.sanskrit`, `.scripture-title`, `.knowledge-card`, `.verse-block`
 
-# Source Of Truth
+## Sanskrit Rendering (ALWAYS)
 
-Knowledge
+Sanskrit text must always display in this order:
+1. **Sanskrit** (Devanagari script) — `.sanskrit` class
+2. **Transliteration** (IAST romanization)
+3. **Translation** (English)
 
-↓
+NEVER combine these into one line.
 
-Graph
+## Canonical vs User Data (CRITICAL)
 
-↓
+- **Canonical** (read-only): Scriptures, Commentaries, Verified Sources
+- **User** (read-write): Uploads, Notes, Collections
+- Canonical content is IMMUTABLE — user content can REFERENCE but never MODIFY canonical nodes
+- User uploads never override canonical sources in search ranking
 
-Search
+## Citation Rules
 
-↓
+Every AI-generated answer MUST include:
+- Source scripture/text reference
+- Chapter and verse (if applicable)
+- Confidence score (0.0–1.0)
+- Evidence level (A–E)
 
-Citation
+**Hallucination auto-block triggers:** Reference not found, verse doesn't exist, source missing, citation mismatch, invented commentary, invalid Sanskrit.
 
-↓
+## API Patterns
 
-Reasoning
+- All API endpoints under `/api/v1/`
+- Error envelope: `{ error, code, message, correlation_id }`
+- Use correlation IDs across all services
+- Event envelope: `{ event_id, event_type, version, timestamp, producer, correlation_id, payload }`
 
-↓
+## Graph Patterns (Neo4j)
 
-UI
+- 13 node labels: Scripture, Book, Chapter, Verse, Concept, Person, Deity, Place, Event, Story, Commentary, School, UploadedDocument
+- 12 relationships: PART_OF, EXPLAINS, REFERENCES, MENTIONS, RELATED_TO, SUPPORTS, CONTRADICTS, AUTHORED_BY, COMMENTS_ON, LOCATED_IN, TEACHES, WORSHIPS
+- Max traversal depth: 5 (for research mode)
+- LLMs are CONSUMERS of graph knowledge, never creators
 
-Never reverse this order.
+## Agent System
 
----
+9 specialized agents with orchestrator:
+- Orchestrator → routes to domain agents
+- Domain agents: Veda, Upanishad, Purana, Vedanta, Sanskrit
+- Infrastructure agents: Graph, Citation, Research, Upload
+- ALL agents are STATELESS
+- Citation Agent has VETO AUTHORITY — can reject any response
+- Contradictory views are BOTH returned (no forced merge)
 
-# Coding Standards
+## Current Phase: 0 ✅ → Starting Phase 1
 
-Language
+### Completed
+- Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
 
-```text
-TypeScript
-```
-
-Required
-
-```text
-strict=true
-```
-
----
-
-No
-
-```text
-any
-```
-
-unless absolutely unavoidable.
-
----
-
-Prefer
-
-```text
-unknown
-```
-
-over
-
-```text
-any
-```
-
----
-
-# Function Rules
-
-Prefer
-
-Small Functions
-
-Single Responsibility
-
-Pure Logic
-
----
-
-Maximum
-
-```text
-100 lines
-```
-
-per function.
-
----
-
-# File Rules
-
-Maximum
-
-```text
-500 lines
-```
-
-per file.
-
-Preferred
-
-```text
-<300 lines
-```
-
----
-
-Split aggressively.
-
----
-
-# Component Rules
-
-Maximum
-
-```text
-250 lines
-```
-
-per React component.
-
----
-
-Large screens must be composed.
-
-Never become monolithic.
-
----
-
-# Naming Rules
-
-Use
-
-```text
-PascalCase
-```
-
-for:
-
-```text
-Components
-
-Classes
-
-Types
-```
-
----
-
-Use
-
-```text
-camelCase
-```
-
-for:
-
-```text
-Functions
-
-Variables
-```
-
----
-
-Use
-
-```text
-UPPER_SNAKE_CASE
-```
-
-for:
-
-```text
-Constants
-```
-
----
-
-# Type Rules
-
-Every API must have:
-
-```text
-Request Type
-
-Response Type
-
-Validation Schema
-```
-
----
-
-No untyped API responses.
-
----
-
-# Validation Rules
-
-Use
-
-```text
-Zod
-```
-
-for:
-
-* API Inputs
-* Forms
-* Environment Variables
-
----
-
-Never trust user input.
-
----
-
-# API Rules
-
-Follow
-
-API_SPEC.md
-
-exactly.
-
----
-
-Do not invent endpoints.
-
----
-
-Do not rename fields.
-
----
-
-Do not alter contracts.
-
----
-
-# Database Rules
-
-Follow
-
-DATA_MODEL.md
-
-exactly.
-
----
-
-Never:
-
-* Rename columns
-* Rename tables
-* Change IDs
-
-without updating documentation.
-
----
-
-# Search Rules
-
-Follow
-
-RLM_ARCHITECTURE.md
-
----
-
-All retrieval must support:
-
-```text
-Keyword
-
-Semantic
-
-Graph
-```
-
----
-
-No retrieval shortcuts.
-
----
-
-# Citation Rules
-
-Follow
-
-CITATION_ENGINE.md
-
----
-
-No citation
-
-↓
-
-No answer
-
----
-
-All scripture claims require references.
-
----
-
-# Agent Rules
-
-Follow
-
-AGENTS.md
-
----
-
-Agents must:
-
-* Be deterministic
-* Be observable
-* Be traceable
-
----
-
-No hidden agent state.
-
----
-
-# Frontend Rules
-
-Follow
-
-FRONTEND_ARCHITECTURE.md
-
-DESIGN_SYSTEM.md
-
-UX_ARCHITECTURE.md
-
----
-
-Never build pages directly.
-
-Use feature modules.
-
----
-
-# Next.js Rules
-
-Prefer:
-
-```text
-Server Components
-```
-
----
-
-Use Client Components only when required.
-
----
-
-Use:
-
-```text
-TanStack Query
-```
-
-for server state.
-
----
-
-Use:
-
-```text
-Zustand
-```
-
-for UI state.
-
----
-
-Never use Zustand as a database cache.
-
----
-
-# Graph Rules
-
-Neo4j is authoritative.
-
-Graph relationships are first-class citizens.
-
----
-
-Do not duplicate graph logic in frontend.
-
----
-
-Graph expansion belongs in graph-service.
-
----
-
-# Upload Rules
-
-User uploads:
-
-* Are personal
-* Are isolated
-* Cannot override scripture
-
----
-
-Always preserve source lineage.
-
----
-
-# Security Rules
-
-Never expose:
-
-* Secrets
-* Internal APIs
-* Service credentials
-
----
-
-Use:
-
-```text
-Environment Variables
-```
-
-for configuration.
-
----
-
-Validate all inputs.
-
----
-
-# Testing Requirements
-
-Every feature requires:
-
-Unit Tests
-
-Integration Tests
-
-Type Safety
-
----
-
-Critical Systems Require:
-
-E2E Tests
-
----
-
-Critical Systems
-
-```text
-Search
-
-Citation
-
-Graph
-
-RLM
-
-Agents
-```
-
----
-
-# Observability Rules
-
-Every service must expose:
-
-```text
-Health
-
-Metrics
-
-Tracing
-
-Logging
-```
-
----
-
-Every request requires:
-
-```text
-request_id
-```
-
----
-
-Every agent execution requires:
-
-```text
-trace_id
-```
-
----
-
-# Performance Rules
-
-API
-
-```text
-<500ms
-```
-
-Target
-
----
-
-Search
-
-```text
-<1 second
-```
-
-Target
-
----
-
-Graph Expansion
-
-```text
-<1 second
-```
-
-Target
-
----
-
-Page Load
-
-```text
-<2.5 seconds
-```
-
-Target
-
----
-
-# Accessibility Rules
-
-All UI must satisfy:
-
-```text
-WCAG AA
-```
-
-Minimum.
-
----
-
-# Documentation Rules
-
-Every major feature requires:
-
-```text
-README.md
-```
-
-containing:
-
-* Purpose
-* Architecture
-* API Usage
-* Tests
-* Examples
-
----
-
-# Forbidden Practices
-
-Never:
-
-* Hardcode secrets
-* Use any everywhere
-* Create giant files
-* Bypass APIs
-* Bypass citation layer
-* Mix service responsibilities
-* Build undocumented architecture
-* Create duplicate domain models
-
----
-
-# AI Agent Workflow
-
-Before coding
-
-```text
-Read Docs
-
-↓
-
-Understand Domain
-
-↓
-
-Create Plan
-
-↓
-
-Generate Code
-
-↓
-
-Generate Tests
-
-↓
-
-Validate Types
-
-↓
-
-Validate Architecture
-```
-
----
-
-Never skip planning.
-
----
-
-# Pull Request Rules
-
-Every generated PR must include:
-
-1. Summary
-
-2. Files Changed
-
-3. Architectural Impact
-
-4. Tests Added
-
-5. Risks
-
----
-
-# Code Generation Priority
-
-When uncertain:
-
-1.
-
-Correctness
-
-↓
-
-2.
-
-Maintainability
-
-↓
-
-3.
-
-Scalability
-
-↓
-
-4.
-
-Performance
-
-↓
-
-5.
-
-Convenience
-
----
-
-# VEDA Development Principles
-
-Knowledge before intelligence.
-
-Citation before reasoning.
-
-Graph before explanation.
-
-Architecture before features.
-
-Quality before speed.
-
-Trust before convenience.
-
----
-
-# Final Directive
-
-Do not optimize for generating code quickly.
-
-Optimize for generating code that remains maintainable, scalable, and trustworthy five years from now.
-
-Every file should move VEDA closer to becoming the most authoritative knowledge platform for Sanatan Dharma ever created.
-
-When uncertain:
-
-Follow the architecture.
-
-When still uncertain:
-
-Prefer simplicity.
-
-When still uncertain:
-
-Do not invent.
+### Next Up
+- Phase 1: Infrastructure foundation, docs reorganization, Supabase setup
+- Phase 2: Data layer (PostgreSQL migrations, Prisma)
+- Phase 3: Knowledge Graph (Neo4j schema, ontology)

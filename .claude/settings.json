@@ -1,0 +1,14 @@
+{
+  "skills": [
+    "skills/frontend.md",
+    "skills/backend.md",
+    "skills/database.md",
+    "skills/knowledge-graph.md",
+    "skills/design-system.md",
+    "skills/scripture-data.md",
+    "skills/testing.md"
+  ],
+  "memory": "memory.md",
+  "project": "VEDA — Knowledge Operating System for Sanatan Dharma",
+  "phase": "1"
+}

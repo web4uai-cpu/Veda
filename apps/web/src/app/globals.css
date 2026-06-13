@@ -1,0 +1,150 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =============================================================================
+ * VEDA Global Styles
+ * ============================================================================= */
+
+@layer base {
+  :root {
+    /* --- Core Palette --- */
+    --veda-saffron: 32 76% 46%;
+    --veda-indigo: 216 46% 26%;
+
+    /* --- Light Mode --- */
+    --background: 36 33% 95%;
+    --foreground: 220 17% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 17% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 17% 17%;
+    --primary: 32 76% 46%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 46% 26%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 36 20% 90%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 36 20% 90%;
+    --accent-foreground: 220 17% 17%;
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 36 18% 85%;
+    --input: 36 18% 85%;
+    --ring: 32 76% 46%;
+    --radius: 12px;
+
+    /* --- Custom --- */
+    --veda-success: 155 80% 30%;
+    --veda-warning: 38 92% 44%;
+    --veda-info: 221 83% 53%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
+    --popover: 217 33% 17%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 32 63% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 35% 45%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 217 33% 20%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 32 63% 52%;
+  }
+
+  * {
+    border-color: hsl(var(--border));
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* --- Sanskrit Text --- */
+@layer components {
+  .sanskrit {
+    font-family: 'Noto Sans Devanagari', 'Mukta', sans-serif;
+    line-height: 1.8;
+  }
+
+  .scripture-title {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+  }
+
+  /* --- Knowledge Card --- */
+  .knowledge-card {
+    @apply rounded-[20px] bg-[hsl(var(--card))] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-shadow duration-250;
+  }
+
+  .knowledge-card:hover {
+    @apply shadow-[0_4px_16px_rgba(0,0,0,0.10)];
+  }
+
+  /* --- Verse Display --- */
+  .verse-block {
+    @apply rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5;
+  }
+
+  .verse-sanskrit {
+    @apply sanskrit text-lg leading-relaxed text-[hsl(var(--foreground))];
+  }
+
+  .verse-transliteration {
+    @apply mt-2 text-sm italic text-[hsl(var(--muted-foreground))];
+  }
+
+  .verse-translation {
+    @apply mt-3 text-base leading-relaxed text-[hsl(var(--foreground))];
+  }
+
+  /* --- Confidence Badge --- */
+  .confidence-high {
+    @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800;
+  }
+
+  .confidence-medium {
+    @apply inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800;
+  }
+
+  .confidence-low {
+    @apply inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800;
+  }
+}
+
+/* --- Scrollbar --- */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 3px;
+  }
+}

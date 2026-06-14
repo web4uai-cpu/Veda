@@ -208,6 +208,9 @@ class ServiceHealth(BaseModel):
     error: str | None = None
     tables: str | None = None
     nodes: str | None = None
+    collections: str | None = None
+    cluster_status: str | None = None
+    indices: str | None = None
 
 
 class HealthResponse(BaseModel):

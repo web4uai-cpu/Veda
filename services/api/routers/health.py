@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter
 
 from db import postgres, neo4j_client, redis_client
+from db import qdrant_client, opensearch_client
 from models.schemas import HealthResponse, ServiceHealth
 
 router = APIRouter(tags=["Health"])
@@ -50,6 +51,20 @@ async def health_check():
     except Exception as e:
         services["redis"] = ServiceHealth(status="not_connected", error=str(e))
 
+    # Qdrant
+    try:
+        qdrant_health = await qdrant_client.check_health()
+        services["qdrant"] = ServiceHealth(**qdrant_health)
+    except Exception as e:
+        services["qdrant"] = ServiceHealth(status="not_connected", error=str(e))
+
+    # OpenSearch
+    try:
+        os_health = await opensearch_client.check_health()
+        services["opensearch"] = ServiceHealth(**os_health)
+    except Exception as e:
+        services["opensearch"] = ServiceHealth(status="not_connected", error=str(e))
+
     # Determine overall status
     statuses = [s.status for s in services.values()]
     operational_count = sum(1 for s in statuses if s == "operational")
@@ -81,5 +96,10 @@ async def root():
             "health": "/api/v1/health",
             "scriptures": "/api/v1/scriptures",
             "verses": "/api/v1/verses/{reference}",
+            "graph_concepts": "/api/v1/graph/concepts",
+            "graph_schools": "/api/v1/graph/schools",
+            "graph_persons": "/api/v1/graph/persons",
+            "graph_search": "/api/v1/graph/search?q={query}",
+            "graph_stats": "/api/v1/graph/stats",
         },
     }

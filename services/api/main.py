@@ -34,6 +34,7 @@ from core.middleware import (
 )
 from routers.health import router as health_router
 from routers.scriptures import router as scripture_router, verse_router
+from routers.graph import router as graph_router
 
 # =============================================================================
 # LOGGING
@@ -69,6 +70,8 @@ async def lifespan(app: FastAPI):
     from db.postgres import init_postgres, close_postgres
     from db.neo4j_client import init_neo4j, close_neo4j
     from db.redis_client import init_redis, close_redis
+    from db.qdrant_client import init_qdrant, close_qdrant
+    from db.opensearch_client import init_opensearch, close_opensearch
 
     # PostgreSQL
     try:
@@ -91,6 +94,20 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("⚠️  Redis not available: %s", e)
 
+    # Qdrant
+    try:
+        await init_qdrant()
+        logger.info("✅  Qdrant connected")
+    except Exception as e:
+        logger.warning("⚠️  Qdrant not available: %s", e)
+
+    # OpenSearch
+    try:
+        await init_opensearch()
+        logger.info("✅  OpenSearch connected")
+    except Exception as e:
+        logger.warning("⚠️  OpenSearch not available: %s", e)
+
     logger.info("🚀  VEDA API ready at http://localhost:8000")
     logger.info("📖  Docs at http://localhost:8000/docs")
 
@@ -109,6 +126,14 @@ async def lifespan(app: FastAPI):
         pass
     try:
         await close_redis()
+    except Exception:
+        pass
+    try:
+        await close_qdrant()
+    except Exception:
+        pass
+    try:
+        await close_opensearch()
     except Exception:
         pass
 
@@ -148,3 +173,4 @@ app.add_middleware(CorrelationIdMiddleware)
 app.include_router(health_router)
 app.include_router(scripture_router)
 app.include_router(verse_router)
+app.include_router(graph_router)

@@ -5,7 +5,7 @@
 @tailwind utilities;
 
 /* =============================================================================
- * VEDA Global Styles
+ * VEDA Global Styles — 3D & Animation Edition
  * ============================================================================= */
 
 @layer base {
@@ -14,7 +14,43 @@
     --veda-saffron: 32 76% 46%;
     --veda-indigo: 216 46% 26%;
 
-    /* --- Light Mode --- */
+    /* --- Dark Mode (Default) --- */
+    --background: 0 0% 3%;
+    --foreground: 210 40% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 210 40% 98%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 32 76% 52%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 46% 40%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 215 20% 55%;
+    --accent: 0 0% 14%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 0 0% 14%;
+    --input: 0 0% 14%;
+    --ring: 32 76% 52%;
+    --radius: 12px;
+
+    /* --- Custom --- */
+    --veda-success: 155 80% 30%;
+    --veda-warning: 38 92% 44%;
+    --veda-info: 221 83% 53%;
+
+    /* --- 3D / Animation --- */
+    --veda-glow: 32 90% 55%;
+    --veda-particle: 32 80% 60%;
+    --perspective: 1200px;
+    --card-glass-bg: rgba(255, 255, 255, 0.03);
+    --card-glass-border: rgba(255, 255, 255, 0.08);
+    --card-glass-shine: rgba(255, 255, 255, 0.05);
+  }
+
+  .light {
     --background: 36 33% 95%;
     --foreground: 220 17% 17%;
     --card: 0 0% 100%;
@@ -34,38 +70,18 @@
     --border: 36 18% 85%;
     --input: 36 18% 85%;
     --ring: 32 76% 46%;
-    --radius: 12px;
 
-    /* --- Custom --- */
-    --veda-success: 155 80% 30%;
-    --veda-warning: 38 92% 44%;
-    --veda-info: 221 83% 53%;
-  }
-
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 217 33% 17%;
-    --card-foreground: 210 40% 98%;
-    --popover: 217 33% 17%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 32 63% 52%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 216 35% 45%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 20%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
-    --ring: 32 63% 52%;
+    --card-glass-bg: rgba(255, 255, 255, 0.6);
+    --card-glass-border: rgba(255, 255, 255, 0.4);
+    --card-glass-shine: rgba(255, 255, 255, 0.3);
   }
 
   * {
     border-color: hsl(var(--border));
+  }
+
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
@@ -74,11 +90,106 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 }
 
-/* --- Sanskrit Text --- */
+/* =============================================================================
+ * KEYFRAME ANIMATIONS
+ * ============================================================================= */
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(201, 122, 36, 0.15), 0 0 40px rgba(201, 122, 36, 0.05); }
+  50% { box-shadow: 0 0 30px rgba(201, 122, 36, 0.3), 0 0 60px rgba(201, 122, 36, 0.1); }
+}
+
+@keyframes breathing {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.02); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(1deg); }
+  66% { transform: translateY(-4px) rotate(-0.5deg); }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(-20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes border-glow {
+  0%, 100% { border-color: hsl(var(--border)); }
+  50% { border-color: hsl(var(--primary) / 0.5); }
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05); filter: brightness(1.2); }
+}
+
+@keyframes particle-drift {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translate(var(--dx, 100px), var(--dy, -100px)) scale(0.5); opacity: 0; }
+}
+
+@keyframes splash-fade-out {
+  0% { opacity: 1; }
+  100% { opacity: 0; pointer-events: none; }
+}
+
+@keyframes logo-reveal {
+  0% { opacity: 0; transform: scale(0.5) rotate(-10deg); filter: blur(10px); }
+  60% { opacity: 1; transform: scale(1.05) rotate(2deg); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
+}
+
+@keyframes ring-expand {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* =============================================================================
+ * COMPONENT STYLES
+ * ============================================================================= */
+
 @layer components {
+  /* --- Sanskrit Text --- */
   .sanskrit {
     font-family: 'Noto Sans Devanagari', 'Mukta', sans-serif;
     line-height: 1.8;
@@ -88,18 +199,52 @@
     font-family: 'Cormorant Garamond', Georgia, serif;
   }
 
-  /* --- Knowledge Card --- */
+  /* --- Knowledge Card (Glass Morphism) --- */
   .knowledge-card {
-    @apply rounded-[20px] bg-[hsl(var(--card))] p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)] transition-shadow duration-250;
+    @apply rounded-[20px] p-6 transition-all duration-300;
+    background: var(--card-glass-bg);
+    border: 1px solid var(--card-glass-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 
   .knowledge-card:hover {
-    @apply shadow-[0_4px_16px_rgba(0,0,0,0.10)];
+    background: rgba(255, 255, 255, 0.06);
+    border-color: hsl(var(--primary) / 0.3);
+    box-shadow: 0 8px 32px rgba(201, 122, 36, 0.08), 0 0 0 1px hsl(var(--primary) / 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* --- Glass Card (stronger effect) --- */
+  .glass-card {
+    background: var(--card-glass-bg);
+    border: 1px solid var(--card-glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+  }
+
+  /* --- 3D Tilt Card --- */
+  .tilt-card {
+    perspective: var(--perspective);
+    transform-style: preserve-3d;
+  }
+
+  .tilt-card-inner {
+    transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transform-style: preserve-3d;
+  }
+
+  .tilt-card:hover .tilt-card-inner {
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
   }
 
   /* --- Verse Display --- */
   .verse-block {
-    @apply rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-5;
+    @apply rounded-xl p-5;
+    background: var(--card-glass-bg);
+    border: 1px solid var(--card-glass-border);
+    backdrop-filter: blur(12px);
   }
 
   .verse-sanskrit {
@@ -116,20 +261,73 @@
 
   /* --- Confidence Badge --- */
   .confidence-high {
-    @apply inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: rgba(16, 185, 129, 0.1);
+    color: rgb(52, 211, 153);
   }
 
   .confidence-medium {
-    @apply inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: rgba(245, 158, 11, 0.1);
+    color: rgb(251, 191, 36);
   }
 
   .confidence-low {
-    @apply inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800;
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(248, 113, 113);
+  }
+
+  /* --- Shimmer Button --- */
+  .shimmer-btn {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .shimmer-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    animation: shimmer 3s infinite;
+  }
+
+  /* --- Glow Input --- */
+  .glow-input:focus {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* --- Animated gradient text --- */
+  .gradient-text-animated {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--primary)),
+      hsl(32, 90%, 65%),
+      hsl(var(--secondary)),
+      hsl(var(--primary))
+    );
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradient-shift 6s ease infinite;
   }
 }
 
-/* --- Scrollbar --- */
+/* =============================================================================
+ * UTILITIES
+ * ============================================================================= */
+
 @layer utilities {
+  /* --- Scrollbar --- */
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--muted)) transparent;
@@ -147,4 +345,85 @@
     background-color: hsl(var(--muted));
     border-radius: 3px;
   }
+
+  /* --- Animation Utilities --- */
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
+  .animate-breathing {
+    animation: breathing 3s ease-in-out infinite;
+  }
+
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 20s linear infinite;
+  }
+
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 4s ease infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.5s ease-out forwards;
+  }
+
+  /* --- Delay utilities --- */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+  .delay-700 { animation-delay: 700ms; }
+  .delay-1000 { animation-delay: 1000ms; }
+
+  /* --- Glass effect --- */
+  .glass {
+    background: var(--card-glass-bg);
+    border: 1px solid var(--card-glass-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  /* --- No scrollbar --- */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* =============================================================================
+ * 3D CANVAS
+ * ============================================================================= */
+
+.three-canvas-container {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.three-canvas-container canvas {
+  pointer-events: auto;
+}
+
+/* Ensure content on top of 3D */
+.content-above-3d {
+  position: relative;
+  z-index: 1;
 }

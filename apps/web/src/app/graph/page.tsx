@@ -1,105 +1,107 @@
-import type { Metadata } from 'next';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Knowledge Map — Explore the Dharma Graph',
-  description:
-    'Interactive knowledge graph visualization of concepts, scriptures, and relationships across Sanatan Dharma.',
-};
+import dynamic from 'next/dynamic';
+import { motion } from 'framer-motion';
+import { ScrollReveal } from '@/components/animations';
+
+const GraphUniverse = dynamic(() => import('@/components/three/GraphUniverse'), { ssr: false });
+
+const LEGEND = [
+  { label: 'Concept', color: '#e8a23c' },
+  { label: 'Scripture', color: '#5478AE' },
+  { label: 'School', color: '#a78bfa' },
+  { label: 'Person', color: '#34d399' },
+];
 
 export default function GraphPage() {
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col lg:h-screen">
       {/* Toolbar */}
-      <div className="flex items-center justify-between border-b border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3 lg:px-6">
+      <motion.div
+        className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-3 lg:px-6 glass"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div>
           <h1 className="text-lg font-semibold text-[hsl(var(--foreground))]">Knowledge Map</h1>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            Interactive graph of Dharma concepts and relationships
+            Interactive 3D graph · Drag to rotate · Scroll to zoom
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <select
+          <motion.select
             id="graph-filter"
-            className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-1.5 text-sm text-[hsl(var(--foreground))]"
+            className="rounded-lg border border-[hsl(var(--border))] bg-transparent px-3 py-1.5 text-sm text-[hsl(var(--foreground))] glass"
+            whileHover={{ borderColor: 'rgba(201, 122, 36, 0.3)' }}
           >
             <option value="all">All Nodes</option>
             <option value="concepts">Concepts</option>
             <option value="scriptures">Scriptures</option>
             <option value="people">People</option>
             <option value="schools">Schools</option>
-          </select>
-          <button className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-1.5 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))]">
+          </motion.select>
+          <motion.button
+            className="rounded-lg border border-[hsl(var(--border))] px-3 py-1.5 text-sm text-[hsl(var(--foreground))] glass"
+            whileHover={{
+              borderColor: 'rgba(201, 122, 36, 0.3)',
+              backgroundColor: 'rgba(201, 122, 36, 0.05)',
+            }}
+            whileTap={{ scale: 0.95 }}
+          >
             Reset View
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Graph Canvas */}
-      <div className="relative flex-1 bg-[hsl(var(--background))]">
-        {/* Placeholder for React Flow — Phase 14 */}
-        <div className="flex h-full flex-col items-center justify-center">
-          <div className="mb-8 text-center">
-            <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-[hsl(var(--primary))]/10 to-[hsl(var(--secondary))]/10">
-              <span className="text-4xl">🕸️</span>
-            </div>
-            <h2 className="scripture-title mb-2 text-2xl font-bold text-[hsl(var(--foreground))]">
-              Knowledge Graph
-            </h2>
-            <p className="max-w-md text-sm text-[hsl(var(--muted-foreground))]">
-              Interactive visualization powered by React Flow + Neo4j.
-              This is a Phase 14 feature — currently showing a preview layout.
-            </p>
-          </div>
+      {/* 3D Graph Canvas */}
+      <div className="relative flex-1" style={{ backgroundColor: 'hsl(0, 0%, 3%)' }}>
+        <motion.div
+          className="h-full w-full"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.3 }}
+        >
+          <GraphUniverse className="h-full w-full" />
+        </motion.div>
 
-          {/* Preview nodes */}
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {[
-              { name: 'Brahman', type: 'concept', size: 'lg' },
-              { name: 'Atman', type: 'concept', size: 'lg' },
-              { name: 'Moksha', type: 'concept', size: 'md' },
-              { name: 'Karma', type: 'concept', size: 'md' },
-              { name: 'Dharma', type: 'concept', size: 'md' },
-              { name: 'Gita', type: 'scripture', size: 'sm' },
-              { name: 'Katha Up.', type: 'scripture', size: 'sm' },
-              { name: 'Advaita', type: 'school', size: 'sm' },
-            ].map((node) => (
-              <div
-                key={node.name}
-                className={`flex items-center justify-center rounded-full border-2 font-medium transition-transform hover:scale-110 ${
-                  node.type === 'concept'
-                    ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary))]/10 text-[hsl(var(--primary))]'
-                    : node.type === 'scripture'
-                      ? 'border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))]/10 text-[hsl(var(--secondary))]'
-                      : 'border-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]/50 text-[hsl(var(--muted-foreground))]'
-                } ${
-                  node.size === 'lg'
-                    ? 'h-20 w-20 text-sm'
-                    : node.size === 'md'
-                      ? 'h-16 w-16 text-xs'
-                      : 'h-14 w-14 text-[10px]'
-                }`}
-              >
-                {node.name}
-              </div>
-            ))}
-          </div>
+        {/* Legend Overlay */}
+        <motion.div
+          className="absolute bottom-6 left-6 flex gap-4 rounded-xl p-3 text-xs glass"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1, duration: 0.5 }}
+        >
+          {LEGEND.map((item) => (
+            <div key={item.label} className="flex items-center gap-1.5 text-[hsl(var(--muted-foreground))]">
+              <motion.span
+                className="h-3 w-3 rounded-full"
+                style={{ backgroundColor: item.color }}
+                animate={{
+                  boxShadow: [
+                    `0 0 4px ${item.color}40`,
+                    `0 0 8px ${item.color}60`,
+                    `0 0 4px ${item.color}40`,
+                  ],
+                }}
+                transition={{ duration: 2, repeat: Infinity }}
+              />
+              {item.label}
+            </div>
+          ))}
+        </motion.div>
 
-          {/* Legend */}
-          <div className="mt-8 flex gap-6 text-xs text-[hsl(var(--muted-foreground))]">
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[hsl(var(--primary))]" />
-              Concept
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[hsl(var(--secondary))]" />
-              Scripture
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[hsl(var(--muted-foreground))]" />
-              School
-            </div>
-          </div>
-        </div>
+        {/* Instructions overlay */}
+        <motion.div
+          className="absolute top-6 right-6 rounded-xl p-3 text-xs text-[hsl(var(--muted-foreground))] glass"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.7 }}
+          transition={{ delay: 1.5 }}
+          whileHover={{ opacity: 1 }}
+        >
+          <p>🖱️ Drag to rotate · Scroll to zoom</p>
+          <p className="mt-1">Hover nodes to highlight</p>
+        </motion.div>
       </div>
     </div>
   );

@@ -35,6 +35,7 @@ from core.middleware import (
 from routers.health import router as health_router
 from routers.scriptures import router as scripture_router, verse_router
 from routers.graph import router as graph_router
+from routers.search import router as search_router
 
 # =============================================================================
 # LOGGING
@@ -174,3 +175,4 @@ app.include_router(health_router)
 app.include_router(scripture_router)
 app.include_router(verse_router)
 app.include_router(graph_router)
+app.include_router(search_router)

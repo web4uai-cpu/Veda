@@ -5,10 +5,10 @@ Async client for Qdrant vector database.
 Used for semantic search over scripture embeddings.
 
 Collections (per infrastructure/qdrant/init_collections.py):
-    - scripture_verses   (3072-dim, cosine)
-    - concepts           (3072-dim, cosine)
-    - user_uploads       (3072-dim, cosine)
-    - commentaries       (3072-dim, cosine)
+    - scripture_chunks   (3072-dim, cosine)
+    - commentary_chunks  (3072-dim, cosine)
+    - upload_chunks      (3072-dim, cosine)
+    - research_chunks    (3072-dim, cosine)
 """
 
 from __future__ import annotations

@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger("veda.migrations")
 
 # Path to migrations directory (relative to project root)
-MIGRATIONS_DIR = Path(__file__).resolve().parents[2] / "supabase" / "migrations"
+MIGRATIONS_DIR = Path(__file__).resolve().parents[3] / "supabase" / "migrations"
 
 
 async def ensure_migration_tracking():
@@ -97,9 +97,9 @@ async def apply_migration(filepath: Path):
 async def _apply_without_auth_policies(sql: str):
     """
     Apply migration SQL but skip statements that reference auth.uid().
-    Splits on semicolons and applies each statement individually.
+    Splits SQL safely enough for PostgreSQL dollar-quoted functions.
     """
-    statements = sql.split(";")
+    statements = _split_sql_statements(sql)
     skip_count = 0
 
     for stmt in statements:
@@ -121,6 +121,48 @@ async def _apply_without_auth_policies(sql: str):
 
     if skip_count:
         logger.info("    Skipped %d auth-dependent statements", skip_count)
+
+
+def _split_sql_statements(sql: str) -> list[str]:
+    """Split SQL on semicolons while respecting single quotes and $$ blocks."""
+    statements: list[str] = []
+    current: list[str] = []
+    in_single_quote = False
+    in_dollar_quote = False
+    i = 0
+
+    while i < len(sql):
+        char = sql[i]
+        next_char = sql[i + 1] if i + 1 < len(sql) else ""
+
+        if char == "'" and not in_dollar_quote:
+            in_single_quote = not in_single_quote
+            current.append(char)
+            i += 1
+            continue
+
+        if char == "$" and next_char == "$" and not in_single_quote:
+            in_dollar_quote = not in_dollar_quote
+            current.append("$$")
+            i += 2
+            continue
+
+        if char == ";" and not in_single_quote and not in_dollar_quote:
+            statement = "".join(current).strip()
+            if statement:
+                statements.append(statement)
+            current = []
+            i += 1
+            continue
+
+        current.append(char)
+        i += 1
+
+    tail = "".join(current).strip()
+    if tail:
+        statements.append(tail)
+
+    return statements
 
 
 async def main():

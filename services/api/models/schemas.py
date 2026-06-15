@@ -8,7 +8,7 @@ All IDs use branded ULID format (e.g., scp_01JXYZ...).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -222,3 +222,93 @@ class HealthResponse(BaseModel):
     timestamp: datetime
     phase: str = "2 — Data Layer"
     services: dict[str, ServiceHealth]
+
+
+# =============================================================================
+# CITATION & EVIDENCE
+# =============================================================================
+
+
+EvidenceLevel = Literal["A", "B", "C", "D", "E"]
+SourceType = Literal["SCRIPTURE", "COMMENTARY", "SCHOLARLY_SOURCE", "UPLOAD", "AI_NOTE"]
+
+
+class CitationResponse(BaseModel):
+    """A verified citation attached to an evidence packet."""
+
+    citation_id: str
+    source_type: SourceType
+    source_name: str
+    reference: str
+    source_id: str
+    chapter: int | None = None
+    verse: int | None = None
+    confidence: float = Field(..., ge=0.0, le=1.0)
+    evidence_level: EvidenceLevel
+
+
+class EvidencePacketResponse(BaseModel):
+    """Search output consumed by citation, reasoning, and agent layers."""
+
+    packet_id: str
+    source_id: str
+    source_type: SourceType
+    title: str
+    content: str
+    citation: CitationResponse
+    score: float = Field(..., ge=0.0, le=1.0)
+    retrieval_source: str
+    highlights: list[str] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# =============================================================================
+# SEARCH
+# =============================================================================
+
+
+SearchMode = Literal["quick", "scholar", "research"]
+SearchIntent = Literal[
+    "concept",
+    "verse",
+    "scripture",
+    "comparison",
+    "research",
+    "translation",
+    "upload",
+    "unknown",
+]
+
+
+class SearchRequest(BaseModel):
+    """Hybrid evidence search request. Search returns evidence, never answers."""
+
+    query: str = Field(..., min_length=2, max_length=500)
+    mode: SearchMode = Field("quick")
+    source_types: list[SourceType] = Field(default_factory=lambda: ["SCRIPTURE", "COMMENTARY"])
+    scripture_ids: list[str] = Field(default_factory=list)
+    concept_slugs: list[str] = Field(default_factory=list)
+    include_uploads: bool = False
+    limit: int = Field(10, ge=1, le=50)
+
+
+class QueryUnderstanding(BaseModel):
+    """Lightweight query plan used before retrieval."""
+
+    intent: SearchIntent
+    normalized_query: str
+    canonical_reference: str | None = None
+    concepts: list[str] = Field(default_factory=list)
+    graph_depth: int = Field(1, ge=0, le=5)
+
+
+class SearchResponse(BaseModel):
+    """Hybrid search response with citation-ready evidence packets."""
+
+    query: str
+    mode: SearchMode
+    understanding: QueryUnderstanding
+    results: list[EvidencePacketResponse]
+    total: int
+    query_time_ms: float
+    warnings: list[str] = Field(default_factory=list)

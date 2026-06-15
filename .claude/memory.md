@@ -7,8 +7,8 @@
 
 ## 📌 Current State
 
-**Phase:** 1 (starting)
-**Last Updated:** 2026-06-13
+**Phase:** 3 (Knowledge Graph / Retrieval Foundation starting)
+**Last Updated:** 2026-06-15
 **Dev Server:** http://localhost:3000
 **API Server:** http://localhost:8000 (when running)
 
@@ -27,6 +27,16 @@
 - CI/CD: GitHub Actions (lint, typecheck, build, API check)
 - ADR.md: 18 architecture decisions documented
 - Build verified: ✓ 9.9s, all routes compile
+
+### Phase 2: Data Layer (2026-06-14 to 2026-06-15)
+- PostgreSQL, Neo4j, Redis, Qdrant, and OpenSearch async adapters
+- FastAPI lifespan connects/disconnects all backend services
+- Scripture and graph routers under `/api/v1`
+- Bhagavad Gita ingestion script
+- Neo4j ontology seed script
+- Citation/evidence/search audit migration
+- Evidence-first `POST /api/v1/search`
+- Backend audit and build order: `docs/architecture/BACKEND_ARCHITECTURE.md`
 
 ---
 
@@ -100,13 +110,12 @@ Architecture:      ADR.md
 
 | Phase | Focus | Key Deliverable |
 |---|---|---|
-| **1** | Infrastructure | Docs reorg, Supabase setup, logging |
-| **2** | Data Layer | PostgreSQL migrations, Prisma/Supabase |
-| **3** | Knowledge Graph | Neo4j schema, ontology nodes |
-| **4** | Scripture Content | Bhagavad Gita ingestion, verse storage |
-| **5** | Ingestion Pipeline | PDF upload, chunking, embeddings |
-| **6** | Search | Hybrid search service |
-| **7** | Citation Engine | Confidence scoring, evidence levels |
+| **3A** | Backend Stabilization | Tests, migration verification, search/citation audit persistence |
+| **3B** | Knowledge Graph Sync | PostgreSQL verses mirrored to Neo4j with concept edges |
+| **4** | Scripture Content | Full Bhagavad Gita ingestion, Upanishad registry |
+| **5** | Indexing Pipeline | OpenSearch bulk index, Qdrant embeddings |
+| **6** | Search | Hybrid search service with fusion ranking |
+| **7** | Citation Engine | Confidence scoring, validation endpoints, audit logs |
 | **8** | RLM Pipeline | Graph-first retrieval + reasoning |
 | **9** | Agents | Multi-agent orchestrator |
 | **10** | Full API | REST + WebSocket endpoints |

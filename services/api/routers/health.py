@@ -101,5 +101,6 @@ async def root():
             "graph_persons": "/api/v1/graph/persons",
             "graph_search": "/api/v1/graph/search?q={query}",
             "graph_stats": "/api/v1/graph/stats",
+            "search": "POST /api/v1/search",
         },
     }

@@ -82,7 +82,9 @@ uvicorn main:app --reload
 
 ## Current Phase
 
-**Phase 0 — Repository Foundation** ✅
+**Phase 3 — Knowledge Graph / Retrieval Foundation** 🚧
+
+Backend audit and next build order: [docs/architecture/BACKEND_ARCHITECTURE.md](docs/architecture/BACKEND_ARCHITECTURE.md)
 
 ---
 

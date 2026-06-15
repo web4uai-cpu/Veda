@@ -39,6 +39,9 @@ VALID_PREFIXES = {
     "vct": "VerseContent",
     "cli": "CollectionItem",
     "chk": "Chunk",
+    "cit": "Citation",
+    "pkt": "EvidencePacket",
+    "qry": "SearchQuery",
 }
 
 

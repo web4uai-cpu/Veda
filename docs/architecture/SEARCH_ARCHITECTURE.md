@@ -469,15 +469,13 @@ Output
 Qdrant
 
 ```text
-scriptures
+scripture_chunks
 
-concepts
+commentary_chunks
 
-commentaries
+upload_chunks
 
-uploads
-
-research
+research_chunks
 ```
 
 ---
@@ -485,13 +483,13 @@ research
 # Elasticsearch Indexes
 
 ```text
-scriptures_index
+veda-scriptures
 
-concepts_index
+veda-concepts
 
-commentaries_index
+veda-commentaries
 
-uploads_index
+veda-uploads
 ```
 
 ---

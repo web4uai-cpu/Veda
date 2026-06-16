@@ -36,6 +36,8 @@ from routers.health import router as health_router
 from routers.scriptures import router as scripture_router, verse_router
 from routers.graph import router as graph_router
 from routers.search import router as search_router
+from routers.citations import router as citations_router
+from routers.corpus import router as corpus_router
 
 # =============================================================================
 # LOGGING
@@ -176,3 +178,5 @@ app.include_router(scripture_router)
 app.include_router(verse_router)
 app.include_router(graph_router)
 app.include_router(search_router)
+app.include_router(citations_router)
+app.include_router(corpus_router)

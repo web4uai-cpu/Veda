@@ -42,6 +42,7 @@ VALID_PREFIXES = {
     "cit": "Citation",
     "pkt": "EvidencePacket",
     "qry": "SearchQuery",
+    "aud": "AuditLog",
 }
 
 

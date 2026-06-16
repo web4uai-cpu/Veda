@@ -102,5 +102,8 @@ async def root():
             "graph_search": "/api/v1/graph/search?q={query}",
             "graph_stats": "/api/v1/graph/stats",
             "search": "POST /api/v1/search",
+            "citation_resolve": "POST /api/v1/citations/resolve",
+            "citation_validate": "POST /api/v1/citations/validate",
+            "corpus_status": "/api/v1/corpus/status",
         },
     }

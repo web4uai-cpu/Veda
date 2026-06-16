@@ -1,8 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
+import { api, type EvidencePacket, type SearchMode } from '@/lib/api';
 
 const KnowledgeOrb = dynamic(() => import('@/components/three/KnowledgeOrb'), { ssr: false });
 
@@ -20,6 +22,38 @@ const MODES = [
 ];
 
 export default function AskPage() {
+  const [question, setQuestion] = useState('');
+  const [mode, setMode] = useState<SearchMode>('quick');
+  const [results, setResults] = useState<EvidencePacket[]>([]);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [error, setError] = useState<string | null>(null);
+
+  async function submitQuestion(nextQuestion = question) {
+    const query = nextQuestion.trim();
+    if (!query) return;
+
+    setQuestion(query);
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const response = await api.search({
+        query,
+        mode,
+        limit: mode === 'quick' ? 5 : 10,
+      });
+      setResults(response.results);
+      setWarnings(response.warnings);
+      setStatus('ready');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reach VEDA API');
+      setResults([]);
+      setWarnings([]);
+      setStatus('error');
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-64px)] flex-col lg:h-screen">
       {/* Chat Area */}
@@ -60,6 +94,8 @@ export default function AskPage() {
               {SUGGESTIONS.map((suggestion) => (
                 <ScrollRevealItem key={suggestion.q} animation="scale-up">
                   <motion.button
+                    type="button"
+                    onClick={() => submitQuestion(suggestion.q)}
                     className="rounded-xl border border-[hsl(var(--border))] px-4 py-3 text-left text-sm text-[hsl(var(--foreground))] glass transition-all"
                     whileHover={{
                       borderColor: 'rgba(201, 122, 36, 0.3)',
@@ -88,29 +124,92 @@ export default function AskPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.5 }}
             >
-              {MODES.map((mode, i) => (
+              {MODES.map((option) => (
                 <motion.button
-                  key={mode.label}
-                  id={`mode-${mode.label.toLowerCase()}`}
+                  key={option.label}
+                  id={`mode-${option.label.toLowerCase()}`}
+                  type="button"
+                  onClick={() => setMode(option.label.toLowerCase() as SearchMode)}
                   className={`relative rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                    i === 0
+                    option.label.toLowerCase() === mode
                       ? 'text-white'
                       : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
                   }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {i === 0 && (
+                  {option.label.toLowerCase() === mode && (
                     <motion.div
                       className="absolute inset-0 rounded-full bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)]"
                       layoutId="mode-highlight"
                       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                     />
                   )}
-                  <span className="relative z-10">{mode.label}</span>
+                  <span className="relative z-10">{option.label}</span>
                 </motion.button>
               ))}
             </motion.div>
+
+            {/* Evidence Results */}
+            {(status === 'loading' || status === 'ready' || status === 'error') && (
+              <div className="mt-8 w-full max-w-3xl text-left">
+                {status === 'loading' && (
+                  <div className="rounded-2xl border border-[hsl(var(--border))] p-5 text-sm text-[hsl(var(--muted-foreground))] glass">
+                    Searching verified sources and preparing citation-ready evidence...
+                  </div>
+                )}
+
+                {status === 'error' && (
+                  <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-200">
+                    {error}
+                  </div>
+                )}
+
+                {status === 'ready' && (
+                  <div className="space-y-4">
+                    <div className="rounded-2xl border border-[hsl(var(--border))] p-4 glass">
+                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
+                        Evidence-first answer mode
+                      </p>
+                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
+                        VEDA is showing verified evidence now. Full generated answers unlock after citation validation and RLM are complete.
+                      </p>
+                    </div>
+
+                    {warnings.map((warning) => (
+                      <div
+                        key={warning}
+                        className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-100"
+                      >
+                        {warning}
+                      </div>
+                    ))}
+
+                    {results.map((packet) => (
+                      <article
+                        key={packet.packet_id}
+                        className="rounded-2xl border border-[hsl(var(--border))] p-5 glass"
+                      >
+                        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                          <span className="rounded-full bg-[hsl(var(--primary))]/10 px-2 py-1 text-[hsl(var(--primary))]">
+                            {packet.citation.reference}
+                          </span>
+                          <span>{packet.citation.source_name}</span>
+                          <span>Confidence {Math.round(packet.citation.confidence * 100)}%</span>
+                          <span>Evidence {packet.citation.evidence_level}</span>
+                        </div>
+                        <h2 className="mb-2 text-base font-semibold text-[hsl(var(--foreground))]">
+                          {packet.title}
+                        </h2>
+                        <p className="whitespace-pre-line text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                          {packet.content}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -123,6 +222,14 @@ export default function AskPage() {
               <motion.textarea
                 id="ask-input"
                 rows={1}
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && !event.shiftKey) {
+                    event.preventDefault();
+                    submitQuestion();
+                  }
+                }}
                 placeholder="Ask about Dharma, scriptures, philosophy..."
                 className="glow-input w-full resize-none rounded-2xl border border-[hsl(var(--border))] px-4 py-3 text-base text-[hsl(var(--foreground))] outline-none glass transition-all focus:border-[hsl(var(--primary))]/40 placeholder:text-[hsl(var(--muted-foreground))]"
                 whileFocus={{
@@ -132,6 +239,8 @@ export default function AskPage() {
             </div>
             <motion.button
               id="ask-submit"
+              type="button"
+              onClick={() => submitQuestion()}
               className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] text-white"
               whileHover={{
                 scale: 1.05,

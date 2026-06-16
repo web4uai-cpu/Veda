@@ -37,15 +37,19 @@ function Particles({ count = 200 }: { count?: number }) {
     const t = clock.getElapsedTime();
 
     for (let i = 0; i < count; i++) {
-      arr[i * 3] += velocities[i * 3] + Math.sin(t * 0.3 + i) * 0.0005;
-      arr[i * 3 + 1] += velocities[i * 3 + 1] + Math.cos(t * 0.2 + i * 0.5) * 0.0005;
-      arr[i * 3 + 2] += velocities[i * 3 + 2];
+      const x = i * 3;
+      const y = x + 1;
+      const z = x + 2;
+
+      arr[x] = (arr[x] ?? 0) + (velocities[x] ?? 0) + Math.sin(t * 0.3 + i) * 0.0005;
+      arr[y] = (arr[y] ?? 0) + (velocities[y] ?? 0) + Math.cos(t * 0.2 + i * 0.5) * 0.0005;
+      arr[z] = (arr[z] ?? 0) + (velocities[z] ?? 0);
 
       // Wrap around bounds
-      if (arr[i * 3] > 10) arr[i * 3] = -10;
-      if (arr[i * 3] < -10) arr[i * 3] = 10;
-      if (arr[i * 3 + 1] > 6) arr[i * 3 + 1] = -6;
-      if (arr[i * 3 + 1] < -6) arr[i * 3 + 1] = 6;
+      if ((arr[x] ?? 0) > 10) arr[x] = -10;
+      if ((arr[x] ?? 0) < -10) arr[x] = 10;
+      if ((arr[y] ?? 0) > 6) arr[y] = -6;
+      if ((arr[y] ?? 0) < -6) arr[y] = 6;
     }
 
     posAttr.needsUpdate = true;
@@ -70,18 +74,6 @@ function Particles({ count = 200 }: { count?: number }) {
       />
     </points>
   );
-}
-
-/** Thin connecting lines between nearby particles */
-function Connections({ count = 200 }: { count?: number }) {
-  const linesRef = useRef<THREE.LineSegments>(null);
-
-  const linePositions = useMemo(() => {
-    // Allocate max possible connections
-    return new Float32Array(count * 6);
-  }, [count]);
-
-  return null; // Connections are expensive; skipping for perf
 }
 
 interface ParticleFieldProps {

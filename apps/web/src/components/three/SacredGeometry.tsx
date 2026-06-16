@@ -67,10 +67,12 @@ function SacredGeometryMesh() {
     const lines: number[] = [];
     for (let i = 0; i < pts.length; i++) {
       for (let j = i + 1; j < pts.length; j++) {
-        const dist = pts[i].distanceTo(pts[j]);
+        const from = pts[i]!;
+        const to = pts[j]!;
+        const dist = from.distanceTo(to);
         if (dist < 0.8) {
-          lines.push(pts[i].x, pts[i].y, pts[i].z);
-          lines.push(pts[j].x, pts[j].y, pts[j].z);
+          lines.push(from.x, from.y, from.z);
+          lines.push(to.x, to.y, to.z);
         }
       }
     }

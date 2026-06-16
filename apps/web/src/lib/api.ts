@@ -2,7 +2,7 @@
  * VEDA API Client
  * ================
  * Centralized HTTP client for the FastAPI backend.
- * Falls back to mock data when the API is unreachable.
+ * Throws typed request errors when the API is unreachable.
  *
  * Usage:
  *   import { api } from '@/lib/api';
@@ -176,6 +176,97 @@ export interface ApiError {
   code: string;
   message: string;
   correlation_id?: string;
+}
+
+export type SearchMode = 'quick' | 'scholar' | 'research';
+export type SourceType = 'SCRIPTURE' | 'COMMENTARY' | 'SCHOLARLY_SOURCE' | 'UPLOAD' | 'AI_NOTE';
+export type EvidenceLevel = 'A' | 'B' | 'C' | 'D' | 'E';
+
+export interface SearchRequest {
+  query: string;
+  mode?: SearchMode;
+  source_types?: SourceType[];
+  scripture_ids?: string[];
+  concept_slugs?: string[];
+  include_uploads?: boolean;
+  limit?: number;
+}
+
+export interface Citation {
+  citation_id: string;
+  source_type: SourceType;
+  source_name: string;
+  reference: string;
+  source_id: string;
+  chapter: number | null;
+  verse: number | null;
+  confidence: number;
+  evidence_level: EvidenceLevel;
+}
+
+export interface EvidencePacket {
+  packet_id: string;
+  source_id: string;
+  source_type: SourceType;
+  title: string;
+  content: string;
+  citation: Citation;
+  score: number;
+  retrieval_source: string;
+  highlights: string[];
+  metadata: Record<string, unknown>;
+}
+
+export interface SearchResponse {
+  query: string;
+  mode: SearchMode;
+  understanding: {
+    intent: string;
+    normalized_query: string;
+    canonical_reference: string | null;
+    concepts: string[];
+    graph_depth: number;
+  };
+  results: EvidencePacket[];
+  total: number;
+  query_time_ms: number;
+  warnings: string[];
+}
+
+export interface CitationResolveResponse {
+  resolved: boolean;
+  citation: Citation | null;
+  message: string | null;
+}
+
+export interface CitationValidateResponse {
+  valid: boolean;
+  decision: 'approved' | 'flagged' | 'rejected';
+  citation: Citation | null;
+  reason: string;
+}
+
+export interface ScriptureCorpusStatus {
+  scripture_id: string;
+  slug: string;
+  name: string;
+  chapter_count: number;
+  verse_count: number;
+  content_count: number;
+  sanskrit_count: number;
+  transliteration_count: number;
+  translation_count: number;
+  missing_sanskrit: number;
+  missing_translation: number;
+  ready_for_search: boolean;
+  ready_for_citation: boolean;
+}
+
+export interface CorpusStatusResponse {
+  status: 'empty' | 'partial' | 'ready';
+  scriptures: ScriptureCorpusStatus[];
+  totals: Record<string, number>;
+  blockers: string[];
 }
 
 // =============================================================================
@@ -362,6 +453,39 @@ class VedaApiClient {
     if (nodeType) params.set('node_type', nodeType);
     params.set('limit', String(limit));
     return this.request(`/api/v1/graph/search?${params}`);
+  }
+
+  // ---------------------------------------------------------------------------
+  // SEARCH
+  // ---------------------------------------------------------------------------
+
+  async search(request: SearchRequest): Promise<SearchResponse> {
+    return this.request('/api/v1/search', {
+      method: 'POST',
+      body: JSON.stringify({
+        mode: 'quick',
+        limit: 10,
+        ...request,
+      }),
+    });
+  }
+
+  async resolveCitation(reference: string): Promise<CitationResolveResponse> {
+    return this.request('/api/v1/citations/resolve', {
+      method: 'POST',
+      body: JSON.stringify({ reference }),
+    });
+  }
+
+  async validateCitation(reference: string): Promise<CitationValidateResponse> {
+    return this.request('/api/v1/citations/validate', {
+      method: 'POST',
+      body: JSON.stringify({ reference, source_type: 'SCRIPTURE' }),
+    });
+  }
+
+  async getCorpusStatus(): Promise<CorpusStatusResponse> {
+    return this.request('/api/v1/corpus/status');
   }
 }
 

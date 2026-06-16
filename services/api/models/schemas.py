@@ -247,6 +247,42 @@ class CitationResponse(BaseModel):
     evidence_level: EvidenceLevel
 
 
+class CitationResolveRequest(BaseModel):
+    """Resolve a user-facing reference into a verified canonical citation."""
+
+    reference: str = Field(..., min_length=2, max_length=80, examples=["BG.2.47"])
+    retrieval_score: float = Field(1.0, ge=0.0, le=1.0)
+    graph_score: float = Field(0.0, ge=0.0, le=1.0)
+
+
+class CitationResolveResponse(BaseModel):
+    """Result of citation resolution."""
+
+    resolved: bool
+    citation: CitationResponse | None = None
+    message: str | None = None
+
+
+class CitationValidateRequest(BaseModel):
+    """Validate that a citation can support a claim or source reference."""
+
+    reference: str = Field(..., min_length=2, max_length=80, examples=["BG.2.47"])
+    source_type: SourceType = "SCRIPTURE"
+    source_id: str | None = None
+    claim: str | None = Field(None, max_length=1000)
+    retrieval_score: float = Field(1.0, ge=0.0, le=1.0)
+    graph_score: float = Field(0.0, ge=0.0, le=1.0)
+
+
+class CitationValidateResponse(BaseModel):
+    """Citation validation decision from the trust layer."""
+
+    valid: bool
+    decision: Literal["approved", "flagged", "rejected"]
+    citation: CitationResponse | None = None
+    reason: str
+
+
 class EvidencePacketResponse(BaseModel):
     """Search output consumed by citation, reasoning, and agent layers."""
 
@@ -312,3 +348,35 @@ class SearchResponse(BaseModel):
     total: int
     query_time_ms: float
     warnings: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# CORPUS
+# =============================================================================
+
+
+class ScriptureCorpusStatus(BaseModel):
+    """Readiness status for a single canonical scripture."""
+
+    scripture_id: str
+    slug: str
+    name: str
+    chapter_count: int
+    verse_count: int
+    content_count: int
+    sanskrit_count: int
+    transliteration_count: int
+    translation_count: int
+    missing_sanskrit: int
+    missing_translation: int
+    ready_for_search: bool
+    ready_for_citation: bool
+
+
+class CorpusStatusResponse(BaseModel):
+    """Global corpus readiness for retrieval and citation gates."""
+
+    status: Literal["empty", "partial", "ready"]
+    scriptures: list[ScriptureCorpusStatus]
+    totals: dict[str, int]
+    blockers: list[str] = Field(default_factory=list)

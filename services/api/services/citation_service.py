@@ -11,7 +11,13 @@ from __future__ import annotations
 
 from core.ulid import generate_id
 from db import postgres
-from models.schemas import CitationResponse, EvidenceLevel, SourceType
+from models.schemas import (
+    CitationResponse,
+    CitationValidateRequest,
+    CitationValidateResponse,
+    EvidenceLevel,
+    SourceType,
+)
 
 
 SOURCE_QUALITY: dict[SourceType, float] = {
@@ -98,4 +104,171 @@ async def resolve_scripture_citation(
         verse=row["verse_number"],
         confidence=confidence,
         evidence_level=evidence_level_for_score(confidence),
+    )
+
+
+async def resolve_scripture_citation_by_reference(
+    reference: str,
+    retrieval_score: float = 1.0,
+    graph_score: float = 0.0,
+) -> CitationResponse | None:
+    """Resolve a canonical reference like BG.2.47 to a verified citation."""
+    normalized = normalize_reference(reference)
+    row = await postgres.fetchrow(
+        "SELECT id FROM verses WHERE canonical_reference = $1",
+        normalized,
+    )
+    if not row:
+        return None
+    return await resolve_scripture_citation(
+        row["id"],
+        retrieval_score=retrieval_score,
+        graph_score=graph_score,
+    )
+
+
+def normalize_reference(reference: str) -> str:
+    """Normalize common Bhagavad Gita reference formats to canonical form."""
+    cleaned = " ".join(reference.strip().upper().replace(":", ".").split())
+    cleaned = cleaned.replace("GITA", "BG")
+    cleaned = cleaned.replace(" ", ".")
+    while ".." in cleaned:
+        cleaned = cleaned.replace("..", ".")
+    return cleaned
+
+
+async def persist_citation(citation: CitationResponse) -> None:
+    """Persist a citation when the trust-layer migration exists."""
+    try:
+        await postgres.execute(
+            """
+            INSERT INTO citations (
+                id, source_type, source_id, source_name, reference,
+                chapter, verse, confidence, evidence_level
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (id) DO NOTHING
+            """,
+            citation.citation_id,
+            citation.source_type,
+            citation.source_id,
+            citation.source_name,
+            citation.reference,
+            citation.chapter,
+            citation.verse,
+            citation.confidence,
+            citation.evidence_level,
+        )
+    except Exception:
+        # Local dev may not have run migration 002 yet. Validation should still work.
+        return
+
+
+async def persist_citation_audit(
+    decision: str,
+    reason: str,
+    confidence: float | None = None,
+    citation_id: str | None = None,
+    correlation_id: str | None = None,
+) -> None:
+    """Persist a citation decision for auditability when available."""
+    try:
+        await postgres.execute(
+            """
+            INSERT INTO citation_audit_logs (
+                id, correlation_id, citation_id, decision, reason, confidence
+            )
+            VALUES ($1, $2, $3, $4, $5, $6)
+            """,
+            generate_id("aud"),
+            correlation_id,
+            citation_id,
+            decision,
+            reason,
+            confidence,
+        )
+    except Exception:
+        return
+
+
+async def validate_citation(
+    request: CitationValidateRequest,
+    correlation_id: str | None = None,
+) -> CitationValidateResponse:
+    """
+    Validate source existence and basic citation confidence.
+
+    Claim-to-evidence semantic matching is intentionally deferred until the
+    retrieval/RLM layer exists. For now, this is a strict source gate.
+    """
+    if request.source_type != "SCRIPTURE":
+        reason = "Only SCRIPTURE citation validation is implemented in this phase."
+        await persist_citation_audit(
+            "rejected",
+            reason,
+            correlation_id=correlation_id,
+        )
+        return CitationValidateResponse(valid=False, decision="rejected", reason=reason)
+
+    citation = await resolve_scripture_citation_by_reference(
+        request.reference,
+        retrieval_score=request.retrieval_score,
+        graph_score=request.graph_score,
+    )
+    if not citation:
+        reason = f"Reference '{request.reference}' was not found in the canonical corpus."
+        await persist_citation_audit(
+            "rejected",
+            reason,
+            correlation_id=correlation_id,
+        )
+        return CitationValidateResponse(valid=False, decision="rejected", reason=reason)
+
+    if request.source_id and request.source_id != citation.source_id:
+        reason = "Citation source_id does not match the canonical reference."
+        await persist_citation_audit(
+            "rejected",
+            reason,
+            confidence=citation.confidence,
+            citation_id=citation.citation_id,
+            correlation_id=correlation_id,
+        )
+        return CitationValidateResponse(
+            valid=False,
+            decision="rejected",
+            citation=citation,
+            reason=reason,
+        )
+
+    await persist_citation(citation)
+
+    if citation.confidence < 0.60:
+        reason = "Citation exists but confidence is below the approval threshold."
+        await persist_citation_audit(
+            "flagged",
+            reason,
+            confidence=citation.confidence,
+            citation_id=citation.citation_id,
+            correlation_id=correlation_id,
+        )
+        return CitationValidateResponse(
+            valid=True,
+            decision="flagged",
+            citation=citation,
+            reason=reason,
+        )
+
+    reason = "Citation verified against canonical scripture."
+    await persist_citation_audit(
+        "approved",
+        reason,
+        confidence=citation.confidence,
+        citation_id=citation.citation_id,
+        correlation_id=correlation_id,
+    )
+    return CitationValidateResponse(
+        valid=True,
+        decision="approved",
+        citation=citation,
+        reason=reason,
     )

@@ -54,6 +54,7 @@ _SOURCE_WEIGHTS = {
     "opensearch.fulltext": 0.25,
     "neo4j.concept": 0.20,
     "postgres.keyword": 0.15,
+    "postgres.upload": 0.10,
 }
 
 
@@ -378,11 +379,71 @@ def _fuse_candidates(candidates: list[Candidate], k: int = 60) -> list[Candidate
     return sorted(best_candidate.values(), key=lambda c: c.score, reverse=True)
 
 
+async def _upload_chunk_candidates(request: SearchRequest) -> list[Candidate]:
+    """Search upload_chunks via PostgreSQL ILIKE for matching text."""
+    try:
+        rows = await postgres.fetch(
+            """
+            SELECT c.id AS chunk_id, c.upload_id, c.content, c.page_start, c.page_end,
+                   u.title, u.filename
+            FROM upload_chunks c
+            JOIN user_uploads u ON u.id = c.upload_id
+            WHERE u.status = 'completed'
+              AND c.content ILIKE '%' || $1 || '%'
+            ORDER BY c.created_at DESC
+            LIMIT $2
+            """,
+            request.query,
+            min(request.limit, 5),
+        )
+    except Exception as e:
+        logger.warning("Upload chunk search failed: %s", e)
+        return []
+
+    candidates = []
+    for row in rows:
+        title = row["title"] or row["filename"]
+        page_info = ""
+        if row["page_start"]:
+            page_info = f" (p. {row['page_start']})"
+        candidates.append(Candidate(
+            source_id=row["chunk_id"],
+            title=f"{title}{page_info}",
+            content=row["content"][:500],
+            score=_SOURCE_WEIGHTS["postgres.upload"],
+            retrieval_source="postgres.upload",
+            metadata={"upload_id": row["upload_id"], "page_start": row["page_start"], "page_end": row["page_end"]},
+        ))
+    return candidates
+
+
 # ---------------------------------------------------------------------------
 # Evidence builder + orchestrator
 # ---------------------------------------------------------------------------
 
 async def _to_evidence(candidate: Candidate) -> EvidencePacketResponse | None:
+    if candidate.retrieval_source == "postgres.upload":
+        from services.citation_service import resolve_upload_citation
+        citation = await resolve_upload_citation(
+            candidate.metadata.get("upload_id", ""),
+            candidate.source_id,
+            retrieval_score=candidate.score,
+        )
+        if not citation:
+            return None
+        await persist_citation(citation)
+        return EvidencePacketResponse(
+            packet_id=generate_id("pkt"),
+            source_id=candidate.source_id,
+            source_type="UPLOAD",
+            title=candidate.title,
+            content=candidate.content,
+            citation=citation,
+            score=candidate.score,
+            retrieval_source=candidate.retrieval_source,
+            metadata=candidate.metadata,
+        )
+
     citation = await resolve_scripture_citation(
         candidate.source_id,
         retrieval_score=candidate.score,
@@ -426,6 +487,7 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
         _keyword_candidates(request),
         _vector_candidates(request, understanding),
         _fulltext_candidates(request),
+        _upload_chunk_candidates(request),
         return_exceptions=True,
     )
     for result in retrieval_results:

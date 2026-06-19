@@ -191,6 +191,53 @@ async def persist_citation_audit(
         return
 
 
+async def resolve_upload_citation(
+    upload_id: str,
+    chunk_id: str,
+    retrieval_score: float,
+) -> CitationResponse | None:
+    """Resolve an upload chunk into a citation with appropriate confidence."""
+    row = await postgres.fetchrow(
+        """
+        SELECT u.id AS upload_id, u.title, u.filename,
+               c.chunk_index, c.page_start, c.page_end
+        FROM user_uploads u
+        JOIN upload_chunks c ON c.upload_id = u.id
+        WHERE u.id = $1 AND c.id = $2
+        """,
+        upload_id,
+        chunk_id,
+    )
+    if not row:
+        return None
+
+    title = row["title"] or row["filename"]
+    page_ref = ""
+    if row["page_start"] and row["page_end"]:
+        if row["page_start"] == row["page_end"]:
+            page_ref = f", p. {row['page_start']}"
+        else:
+            page_ref = f", pp. {row['page_start']}-{row['page_end']}"
+
+    reference = f"{title}{page_ref}"
+
+    confidence = calculate_confidence(
+        "UPLOAD",
+        retrieval_score=retrieval_score,
+    )
+    return CitationResponse(
+        citation_id=generate_id("cit"),
+        source_type="UPLOAD",
+        source_name=title,
+        reference=reference,
+        source_id=chunk_id,
+        chapter=None,
+        verse=row["chunk_index"],
+        confidence=confidence,
+        evidence_level=evidence_level_for_score(confidence),
+    )
+
+
 async def validate_citation(
     request: CitationValidateRequest,
     correlation_id: str | None = None,

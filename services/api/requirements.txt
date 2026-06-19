@@ -16,7 +16,7 @@ asyncpg>=0.30.0
 neo4j>=5.27.0
 redis>=5.2.0
 qdrant-client>=1.7.0
-opensearch-py>=2.4.0
+opensearch-py[async]>=2.4.0
 
 # --- Utilities ---
 orjson>=3.10.0

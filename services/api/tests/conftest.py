@@ -63,7 +63,7 @@ def mock_neo4j(monkeypatch):
     monkeypatch.setattr("db.neo4j_client.write_query", mock_write)
     monkeypatch.setattr("db.neo4j_client.check_health", mock_check_health)
     # Patch local bindings in modules that use `from db.neo4j_client import read_query`
-    monkeypatch.setattr("routers.graph.read_query", mock_read)
+    monkeypatch.setattr("services.graph_service.read_query", mock_read)
     monkeypatch.setattr("services.search_service.read_query", mock_read)
 
     return SimpleNamespace(

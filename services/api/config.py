@@ -2,108 +2,84 @@
 VEDA API Configuration
 ========================
 Environment-based configuration for the FastAPI service.
-All values loaded from environment variables with sensible defaults.
+Uses Pydantic Settings for validation and .env file support.
 """
 
-import os
-from dataclasses import dataclass, field
+from __future__ import annotations
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-def _csv_env(name: str, default: list[str]) -> list[str]:
-    """Read a comma-separated env var while ignoring empty values."""
-    value = os.getenv(name)
-    if not value:
-        return default
-    return [item.strip() for item in value.split(",") if item.strip()]
+class Settings(BaseSettings):
+    """Application settings loaded from environment variables and .env file."""
 
-
-@dataclass
-class Settings:
-    """Application settings loaded from environment."""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     # --- App ---
     app_name: str = "VEDA API"
-    app_version: str = "0.1.0"
-    debug: bool = field(default_factory=lambda: os.getenv("DEBUG", "false").lower() == "true")
+    app_version: str = "0.2.0"
+    debug: bool = False
 
     # --- Database (Supabase / PostgreSQL) ---
-    database_url: str = field(
-        default_factory=lambda: os.getenv(
-            "DATABASE_URL", "postgresql://veda:vedadev2026@localhost:5432/veda"
-        )
-    )
+    database_url: str = "postgresql://veda:vedadev2026@localhost:5432/veda"
 
     # --- Supabase ---
-    supabase_url: str = field(
-        default_factory=lambda: os.getenv("SUPABASE_URL", "http://localhost:54321")
-    )
-    supabase_service_key: str = field(
-        default_factory=lambda: os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-    )
+    supabase_url: str = "http://localhost:54321"
+    supabase_service_key: str = ""
 
     # --- Neo4j ---
-    neo4j_uri: str = field(
-        default_factory=lambda: os.getenv("NEO4J_URI", "bolt://localhost:7687")
-    )
-    neo4j_user: str = field(default_factory=lambda: os.getenv("NEO4J_USER", "neo4j"))
-    neo4j_password: str = field(
-        default_factory=lambda: os.getenv("NEO4J_PASSWORD", "vedadev2026")
-    )
+    neo4j_uri: str = "bolt://localhost:7687"
+    neo4j_user: str = "neo4j"
+    neo4j_password: str = "vedadev2026"
 
     # --- Qdrant ---
-    qdrant_url: str = field(
-        default_factory=lambda: os.getenv("QDRANT_URL", "http://localhost:6333")
-    )
+    qdrant_url: str = "http://localhost:6333"
 
     # --- OpenSearch ---
-    opensearch_url: str = field(
-        default_factory=lambda: os.getenv("OPENSEARCH_URL", "http://localhost:9200")
-    )
+    opensearch_url: str = "http://localhost:9200"
 
     # --- Redis ---
-    redis_url: str = field(
-        default_factory=lambda: os.getenv("REDIS_URL", "redis://localhost:6379")
-    )
+    redis_url: str = "redis://localhost:6379"
 
     # --- LLM (OpenRouter) ---
-    openrouter_api_key: str = field(
-        default_factory=lambda: os.getenv("OPENROUTER_API_KEY", "")
-    )
-    openrouter_base_url: str = field(
-        default_factory=lambda: os.getenv(
-            "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
-        )
-    )
-    llm_primary_model: str = field(
-        default_factory=lambda: os.getenv("LLM_PRIMARY_MODEL", "openai/gpt-5.5")
-    )
-    llm_fallback_model: str = field(
-        default_factory=lambda: os.getenv(
-            "LLM_FALLBACK_MODEL", "anthropic/claude-sonnet-4"
-        )
-    )
+    openrouter_api_key: str = ""
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    llm_primary_model: str = "openai/gpt-5.5"
+    llm_fallback_model: str = "anthropic/claude-sonnet-4"
 
     # --- Embeddings ---
-    openai_api_key: str = field(
-        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
-    )
-    embedding_model: str = field(
-        default_factory=lambda: os.getenv("EMBEDDING_MODEL", "text-embedding-3-large")
-    )
-    embedding_dimensions: int = field(
-        default_factory=lambda: int(os.getenv("EMBEDDING_DIMENSIONS", "3072"))
-    )
+    openai_api_key: str = ""
+    embedding_model: str = "text-embedding-3-large"
+    embedding_dimensions: int = 3072
 
     # --- CORS ---
-    cors_origins: list[str] = field(
-        default_factory=lambda: _csv_env(
-            "CORS_ORIGINS",
-            [
-                "http://localhost:3000",
-                "http://localhost:3001",
-            ],
-        )
-    )
+    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, v: str) -> str:
+        if not v.startswith("postgresql://") and not v.startswith("postgres://"):
+            raise ValueError("database_url must start with postgresql:// or postgres://")
+        return v
+
+    @field_validator("embedding_dimensions")
+    @classmethod
+    def validate_embedding_dimensions(cls, v: int) -> int:
+        if v not in (768, 1536, 3072):
+            raise ValueError(f"embedding_dimensions must be 768, 1536, or 3072 — got {v}")
+        return v
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
 
 
 settings = Settings()

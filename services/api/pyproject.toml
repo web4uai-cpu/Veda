@@ -1,0 +1,30 @@
+[project]
+name = "veda-api"
+version = "0.2.0"
+description = "VEDA Knowledge Operating System — FastAPI Backend"
+requires-python = ">=3.12"
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "httpx>=0.28.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning:asyncpg.*",
+    "ignore::DeprecationWarning:neo4j.*",
+]
+
+[tool.coverage.run]
+source = ["routers", "services", "core", "db"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

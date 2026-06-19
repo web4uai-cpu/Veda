@@ -18,5 +18,13 @@ redis>=5.2.0
 qdrant-client>=1.7.0
 opensearch-py[async]>=2.4.0
 
+# --- Settings ---
+pydantic-settings>=2.8.0
+
 # --- Utilities ---
 orjson>=3.10.0
+
+# --- Testing (pip install pytest pytest-asyncio pytest-cov httpx) ---
+# pytest>=8.0.0
+# pytest-asyncio>=0.24.0
+# pytest-cov>=5.0.0

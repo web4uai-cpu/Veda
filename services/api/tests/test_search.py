@@ -147,3 +147,16 @@ def test_fusion_ranking_semantic_outweighs_keyword():
 def test_fusion_ranking_empty_input():
     """Empty candidate list should return empty."""
     assert _fuse_candidates([]) == []
+
+
+async def test_search_logs_audit_record(app_client, mock_all_db):
+    """Search should persist a query audit record."""
+    mock_all_db.pg.fetchrow.return_value = None
+    mock_all_db.pg.fetch.return_value = []
+
+    await app_client.post(
+        "/api/v1/search",
+        json={"query": "what is dharma", "mode": "quick", "limit": 5},
+    )
+    execute_calls = [str(c) for c in mock_all_db.pg.execute.call_args_list]
+    assert any("search_queries" in call for call in execute_calls)

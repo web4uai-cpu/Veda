@@ -23,7 +23,7 @@ from models.schemas import (
     SearchRequest,
     SearchResponse,
 )
-from services.citation_service import resolve_scripture_citation
+from services.citation_service import resolve_scripture_citation, persist_citation
 
 logger = logging.getLogger("veda.services.search")
 
@@ -390,6 +390,8 @@ async def _to_evidence(candidate: Candidate) -> EvidencePacketResponse | None:
     if not citation:
         return None
 
+    await persist_citation(citation)
+
     return EvidencePacketResponse(
         packet_id=generate_id("pkt"),
         source_id=candidate.source_id,
@@ -440,6 +442,23 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
         )
 
     elapsed_ms = (time.perf_counter() - started) * 1000
+
+    try:
+        await postgres.execute(
+            """
+            INSERT INTO search_queries (id, query, mode, intent, result_count, latency_ms)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            """,
+            generate_id("qry"),
+            request.query,
+            request.mode,
+            understanding.intent,
+            len(evidence),
+            round(elapsed_ms, 2),
+        )
+    except Exception:
+        pass
+
     return SearchResponse(
         query=request.query,
         mode=request.mode,

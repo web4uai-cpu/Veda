@@ -108,6 +108,44 @@ async def test_validate_citation_approved(app_client, mock_all_db):
     assert data["valid"] is True
 
 
+async def test_persist_citation_writes_to_db(mock_all_db):
+    from services.citation_service import persist_citation
+    from models.schemas import CitationResponse
+    citation = CitationResponse(
+        citation_id="cit_01HX0000000000000000000099",
+        source_type="SCRIPTURE",
+        source_name="Bhagavad Gita",
+        reference="BG.2.47",
+        source_id="vrs_01HX0000000000000000000003",
+        chapter=2,
+        verse=47,
+        confidence=0.85,
+        evidence_level="B",
+    )
+    await persist_citation(citation)
+    assert mock_all_db.pg.execute.called
+    call_args = str(mock_all_db.pg.execute.call_args)
+    assert "citations" in call_args
+
+
+async def test_persist_citation_swallows_errors(mock_all_db):
+    from services.citation_service import persist_citation
+    from models.schemas import CitationResponse
+    mock_all_db.pg.execute.side_effect = Exception("table does not exist")
+    citation = CitationResponse(
+        citation_id="cit_01HX0000000000000000000099",
+        source_type="SCRIPTURE",
+        source_name="Bhagavad Gita",
+        reference="BG.2.47",
+        source_id="vrs_01HX0000000000000000000003",
+        chapter=2,
+        verse=47,
+        confidence=0.85,
+        evidence_level="B",
+    )
+    await persist_citation(citation)
+
+
 async def test_validate_citation_rejected_non_scripture(app_client, mock_all_db):
     resp = await app_client.post(
         "/api/v1/citations/validate",

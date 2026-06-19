@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from db import postgres
 from core.errors import NotFoundError
+from services.cache_service import (
+    get_cached, set_cached, scripture_list_key, TTL_SCRIPTURE_LIST,
+)
 
 
 _SCRIPTURE_SELECT = """
@@ -26,6 +29,11 @@ _SCRIPTURE_SELECT = """
 async def list_scriptures(
     category: str | None, page: int, per_page: int
 ) -> tuple[list[dict], int]:
+    key = scripture_list_key(category, page, per_page)
+    cached = await get_cached(key)
+    if cached is not None:
+        return cached["rows"], cached["total"]
+
     offset = (page - 1) * per_page
 
     if category:
@@ -43,7 +51,10 @@ async def list_scriptures(
         )
         total = await postgres.fetchval("SELECT COUNT(*) FROM scriptures")
 
-    return [dict(r) for r in rows], total or 0
+    result_rows = [dict(r) for r in rows]
+    total_count = total or 0
+    await set_cached(key, {"rows": result_rows, "total": total_count}, ttl=TTL_SCRIPTURE_LIST)
+    return result_rows, total_count
 
 
 async def get_scripture_by_slug(slug: str) -> dict:

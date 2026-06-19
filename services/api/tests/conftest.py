@@ -92,6 +92,10 @@ def mock_redis(monkeypatch):
     monkeypatch.setattr("db.redis_client.cache_set", mock_set)
     monkeypatch.setattr("db.redis_client.cache_delete", mock_delete)
     monkeypatch.setattr("db.redis_client.check_health", mock_check_health)
+    # Patch local bindings in cache_service
+    monkeypatch.setattr("services.cache_service.cache_get", mock_get)
+    monkeypatch.setattr("services.cache_service.cache_set", mock_set)
+    monkeypatch.setattr("services.cache_service.cache_delete", mock_delete)
 
     return SimpleNamespace(
         cache_get=mock_get,

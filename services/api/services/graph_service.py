@@ -9,11 +9,19 @@ from __future__ import annotations
 
 from db.neo4j_client import read_query
 from core.errors import NotFoundError
+from services.cache_service import (
+    get_cached, set_cached, concept_list_key, TTL_CONCEPT_LIST,
+)
 
 
 async def list_concepts(category: str | None, limit: int) -> list[dict]:
+    key = concept_list_key(category, limit)
+    cached = await get_cached(key)
+    if cached is not None:
+        return cached
+
     if category:
-        return await read_query(
+        results = await read_query(
             """
             MATCH (c:Concept {category: $category})
             OPTIONAL MATCH (c)-[r]-()
@@ -25,18 +33,22 @@ async def list_concepts(category: str | None, limit: int) -> list[dict]:
             """,
             {"category": category, "limit": limit},
         )
-    return await read_query(
-        """
-        MATCH (c:Concept)
-        OPTIONAL MATCH (c)-[r]-()
-        RETURN c.id AS id, c.slug AS slug, c.name AS name,
-               c.sanskrit_name AS sanskrit_name, c.category AS category,
-               c.summary AS summary, count(r) AS connection_count
-        ORDER BY connection_count DESC, c.name
-        LIMIT $limit
-        """,
-        {"limit": limit},
-    )
+    else:
+        results = await read_query(
+            """
+            MATCH (c:Concept)
+            OPTIONAL MATCH (c)-[r]-()
+            RETURN c.id AS id, c.slug AS slug, c.name AS name,
+                   c.sanskrit_name AS sanskrit_name, c.category AS category,
+                   c.summary AS summary, count(r) AS connection_count
+            ORDER BY connection_count DESC, c.name
+            LIMIT $limit
+            """,
+            {"limit": limit},
+        )
+
+    await set_cached(key, results, ttl=TTL_CONCEPT_LIST)
+    return results
 
 
 async def get_concept(slug: str) -> dict:

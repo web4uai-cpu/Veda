@@ -23,6 +23,7 @@ from models.schemas import (
     SearchRequest,
     SearchResponse,
 )
+from services.cache_service import get_cached, set_cached, search_key, TTL_SEARCH_RESULTS
 from services.citation_service import resolve_scripture_citation, persist_citation
 
 logger = logging.getLogger("veda.services.search")
@@ -407,6 +408,11 @@ async def _to_evidence(candidate: Candidate) -> EvidencePacketResponse | None:
 
 async def search_evidence(request: SearchRequest) -> SearchResponse:
     """Run all available retrieval paths and return citation-ready evidence."""
+    cache_k = search_key(request.query, request.mode)
+    cached = await get_cached(cache_k)
+    if cached is not None:
+        return SearchResponse(**cached)
+
     started = time.perf_counter()
     understanding = understand_query(request)
     warnings: list[str] = []
@@ -459,7 +465,7 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
     except Exception:
         pass
 
-    return SearchResponse(
+    response = SearchResponse(
         query=request.query,
         mode=request.mode,
         understanding=understanding,
@@ -468,3 +474,8 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
         query_time_ms=round(elapsed_ms, 2),
         warnings=warnings,
     )
+
+    if evidence:
+        await set_cached(cache_k, response.model_dump(), ttl=TTL_SEARCH_RESULTS)
+
+    return response

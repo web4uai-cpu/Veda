@@ -7,8 +7,8 @@
 
 ## 📌 Current State
 
-**Phase:** 3 (Knowledge Graph / Retrieval Foundation starting)
-**Last Updated:** 2026-06-15
+**Phase:** 3A complete, 3B next (Knowledge Graph Sync)
+**Last Updated:** 2026-06-19
 **Dev Server:** http://localhost:3000
 **API Server:** http://localhost:8000 (when running)
 
@@ -37,6 +37,17 @@
 - Citation/evidence/search audit migration
 - Evidence-first `POST /api/v1/search`
 - Backend audit and build order: `docs/architecture/BACKEND_ARCHITECTURE.md`
+
+### Phase 3A: Backend Stabilization (2026-06-19)
+- Test infrastructure: pytest + conftest with 5 DB mock fixtures, 59 tests passing
+- Config rewrite: Pydantic BaseSettings with validators, .env support, fail-fast
+- Service extraction: scripture_service.py (7 functions) + graph_service.py (9 functions)
+- Routers slimmed: scriptures.py 326→115 lines, graph.py 354→85 lines
+- Search integration: Qdrant vector + OpenSearch fulltext wired with Reciprocal Rank Fusion
+- 4 concurrent retrieval paths: postgres.reference, postgres.keyword, qdrant.semantic, opensearch.fulltext
+- Citation audit: persist_citation in evidence flow + search_queries audit logging
+- Redis caching: cache_service.py — scripture list (24h), concepts (1h), search (5min)
+- All graceful degradation: Qdrant/OpenSearch/Redis failures never block requests
 
 ---
 

@@ -140,16 +140,17 @@ Every AI-generated answer MUST include:
 - Citation Agent has VETO AUTHORITY — can reject any response
 - Contradictory views are BOTH returned (no forced merge)
 
-## Current Phase: 3 — Knowledge Graph / Retrieval Foundation (starting)
+## Current Phase: 4 — Scripture Content (next)
 
 ### Completed
 - Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
 - Phase 1: Docs reorganization, database migrations, Neo4j schema, Qdrant setup
 - Phase 2: Database connections, API routers, Pydantic models, Gita ingestion scripts, citation/evidence schema, evidence search API
+- Phase 3A: Backend stabilization, tests, migration verification, citation/search audit persistence, Redis caching layer
+- Phase 3B: Knowledge Graph sync (PG→Neo4j), concept detection for Gita verses, graph validation command (76 tests passing)
 
 ### Next Up
-- Phase 3A: Backend stabilization, tests, migration verification, citation/search audit persistence
-- Phase 3B: Knowledge Graph sync from PostgreSQL verses into Neo4j
 - Phase 4: Scripture Content (full Bhagavad Gita ingestion and principal Upanishad registry)
+- Phase 5: Indexing Pipeline (embedding generation, OpenSearch/Qdrant bulk indexing)
 
 See `docs/architecture/BACKEND_ARCHITECTURE.md` for the active backend audit and build order.

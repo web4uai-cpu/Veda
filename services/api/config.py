@@ -9,6 +9,14 @@ import os
 from dataclasses import dataclass, field
 
 
+def _csv_env(name: str, default: list[str]) -> list[str]:
+    """Read a comma-separated env var while ignoring empty values."""
+    value = os.getenv(name)
+    if not value:
+        return default
+    return [item.strip() for item in value.split(",") if item.strip()]
+
+
 @dataclass
 class Settings:
     """Application settings loaded from environment."""
@@ -88,10 +96,13 @@ class Settings:
 
     # --- CORS ---
     cors_origins: list[str] = field(
-        default_factory=lambda: [
-            "http://localhost:3000",
-            "http://localhost:3001",
-        ]
+        default_factory=lambda: _csv_env(
+            "CORS_ORIGINS",
+            [
+                "http://localhost:3000",
+                "http://localhost:3001",
+            ],
+        )
     )
 
 

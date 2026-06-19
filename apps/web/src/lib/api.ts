@@ -487,6 +487,52 @@ class VedaApiClient {
   async getCorpusStatus(): Promise<CorpusStatusResponse> {
     return this.request('/api/v1/corpus/status');
   }
+
+  // --- Admin Uploads ---
+
+  async uploadPdf(file: File, adminKey: string, title?: string, scriptureId?: string): Promise<Upload> {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (title) formData.append('title', title);
+    if (scriptureId) formData.append('scripture_id', scriptureId);
+    return this.request('/api/v1/admin/uploads', {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-Admin-Key': adminKey },
+    });
+  }
+
+  async listUploads(adminKey: string, status?: string): Promise<{ uploads: Upload[]; total: number }> {
+    const params = new URLSearchParams();
+    if (status) params.set('status', status);
+    return this.request(`/api/v1/admin/uploads?${params}`, {
+      headers: { 'X-Admin-Key': adminKey },
+    });
+  }
+
+  async processUpload(uploadId: string, adminKey: string): Promise<Upload> {
+    return this.request(`/api/v1/admin/uploads/${uploadId}/process`, {
+      method: 'POST',
+      headers: { 'X-Admin-Key': adminKey },
+    });
+  }
+}
+
+export interface Upload {
+  id: string;
+  user_id: string;
+  filename: string;
+  file_type: string;
+  storage_key: string;
+  status: string;
+  title: string | null;
+  scripture_id: string | null;
+  language: string;
+  size_bytes: number | null;
+  error_message: string | null;
+  metadata: Record<string, unknown>;
+  uploaded_at: string;
+  chunk_count: number;
 }
 
 export const api = new VedaApiClient(API_BASE_URL);

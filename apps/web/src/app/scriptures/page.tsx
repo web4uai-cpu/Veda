@@ -19,19 +19,22 @@ const CATEGORY_CONFIG: Record<string, { label: string; gradient: string; border:
 const CATEGORY_ORDER = ['veda', 'upanishad', 'gita', 'ramayana', 'mahabharata', 'purana', 'shastra', 'commentary'];
 
 function groupByCategory(scriptures: Scripture[]): { category: string; label: string; items: Scripture[] }[] {
-  const grouped: Record<string, Scripture[]> = {};
+  const grouped = new Map<string, Scripture[]>();
   for (const s of scriptures) {
-    const cat = s.category;
-    if (!grouped[cat]) grouped[cat] = [];
-    (grouped[cat] as Scripture[]).push(s);
+    const list = grouped.get(s.category);
+    if (list) {
+      list.push(s);
+    } else {
+      grouped.set(s.category, [s]);
+    }
   }
 
   return CATEGORY_ORDER
-    .filter((cat) => grouped[cat]?.length)
+    .filter((cat) => (grouped.get(cat)?.length ?? 0) > 0)
     .map((cat) => ({
       category: cat,
       label: CATEGORY_CONFIG[cat]?.label ?? cat,
-      items: grouped[cat],
+      items: grouped.get(cat)!,
     }));
 }
 

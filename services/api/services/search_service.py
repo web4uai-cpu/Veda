@@ -1,17 +1,19 @@
 """
 VEDA — Hybrid Search Service
 ==============================
-Evidence-first retrieval for scriptures, graph context, and future vector/text
-indexes. This layer returns citation-ready evidence packets, not generated
-answers.
+Evidence-first retrieval across PostgreSQL, Neo4j, Qdrant, and OpenSearch.
+Returns citation-ready evidence packets, not generated answers.
 """
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import re
 import time
 from dataclasses import dataclass, field
 
+from config import settings
 from core.ulid import generate_id
 from db import postgres
 from db.neo4j_client import read_query
@@ -23,6 +25,7 @@ from models.schemas import (
 )
 from services.citation_service import resolve_scripture_citation
 
+logger = logging.getLogger("veda.services.search")
 
 REFERENCE_RE = re.compile(
     r"\b(?P<prefix>BG|GITA)\s*\.?\s*(?P<chapter>\d{1,2})\s*[\.:]\s*(?P<verse>\d{1,3})\b",
@@ -42,6 +45,14 @@ CONCEPT_HINTS = {
     "gyan": "jnana-yoga",
     "yoga": "raja-yoga",
     "samsara": "samsara",
+}
+
+_SOURCE_WEIGHTS = {
+    "postgres.reference": 1.0,
+    "qdrant.semantic": 0.40,
+    "opensearch.fulltext": 0.25,
+    "neo4j.concept": 0.20,
+    "postgres.keyword": 0.15,
 }
 
 
@@ -94,6 +105,10 @@ def understand_query(request: SearchRequest) -> QueryUnderstanding:
         graph_depth=depth,
     )
 
+
+# ---------------------------------------------------------------------------
+# Retrieval paths
+# ---------------------------------------------------------------------------
 
 async def _reference_candidates(reference: str) -> list[Candidate]:
     rows = await postgres.fetch(
@@ -237,6 +252,135 @@ async def _graph_concept_candidates(understanding: QueryUnderstanding) -> list[C
     return candidates
 
 
+async def _vector_candidates(
+    request: SearchRequest, understanding: QueryUnderstanding
+) -> list[Candidate]:
+    """Semantic search via Qdrant. Generates embedding then searches scripture_chunks."""
+    if not settings.openai_api_key:
+        return []
+
+    try:
+        from db.qdrant_client import search_vectors, get_client
+        get_client()
+    except (RuntimeError, ImportError):
+        return []
+
+    try:
+        import openai
+        client = openai.AsyncOpenAI(api_key=settings.openai_api_key)
+        resp = await client.embeddings.create(
+            model=settings.embedding_model,
+            input=understanding.normalized_query,
+            dimensions=settings.embedding_dimensions,
+        )
+        query_vector = resp.data[0].embedding
+    except Exception as exc:
+        logger.debug("Embedding generation failed: %s", exc)
+        return []
+
+    try:
+        hits = await search_vectors(
+            collection_name="scripture_chunks",
+            query_vector=query_vector,
+            limit=request.limit,
+            score_threshold=0.65,
+        )
+    except Exception as exc:
+        logger.debug("Qdrant search failed: %s", exc)
+        return []
+
+    candidates: list[Candidate] = []
+    for hit in hits:
+        payload = hit.get("payload", {})
+        candidates.append(
+            Candidate(
+                source_id=payload.get("verse_id", str(hit["id"])),
+                title=payload.get("canonical_reference", ""),
+                content=payload.get("content", ""),
+                score=round(hit["score"], 4),
+                retrieval_source="qdrant.semantic",
+                metadata={"collection": "scripture_chunks"},
+            )
+        )
+    return candidates
+
+
+async def _fulltext_candidates(request: SearchRequest) -> list[Candidate]:
+    """Full-text search via OpenSearch on veda-scriptures index."""
+    try:
+        from db.opensearch_client import search as os_search, get_client
+        get_client()
+    except (RuntimeError, ImportError):
+        return []
+
+    try:
+        query_dsl = {
+            "multi_match": {
+                "query": request.query,
+                "fields": ["content^2", "canonical_reference^3", "sanskrit", "transliteration"],
+                "type": "best_fields",
+                "fuzziness": "AUTO",
+            }
+        }
+        result = await os_search(
+            index="veda-scriptures",
+            query=query_dsl,
+            size=request.limit,
+            highlight={"fields": {"content": {}, "sanskrit": {}}},
+        )
+    except Exception as exc:
+        logger.debug("OpenSearch search failed: %s", exc)
+        return []
+
+    candidates: list[Candidate] = []
+    for hit in result.get("hits", {}).get("hits", []):
+        source = hit.get("_source", {})
+        os_score = hit.get("_score", 1.0)
+        candidates.append(
+            Candidate(
+                source_id=source.get("verse_id", hit.get("_id", "")),
+                title=source.get("canonical_reference", ""),
+                content=source.get("content", ""),
+                score=round(min(os_score / 10.0, 0.95), 4),
+                retrieval_source="opensearch.fulltext",
+                metadata={"highlights": hit.get("highlight", {})},
+            )
+        )
+    return candidates
+
+
+# ---------------------------------------------------------------------------
+# Fusion ranking
+# ---------------------------------------------------------------------------
+
+def _fuse_candidates(candidates: list[Candidate], k: int = 60) -> list[Candidate]:
+    """Reciprocal Rank Fusion across retrieval sources."""
+    by_source: dict[str, list[Candidate]] = {}
+    for c in candidates:
+        by_source.setdefault(c.retrieval_source, []).append(c)
+
+    rrf_scores: dict[str, float] = {}
+    best_candidate: dict[str, Candidate] = {}
+
+    for source, source_candidates in by_source.items():
+        weight = _SOURCE_WEIGHTS.get(source, 0.10)
+        for rank, c in enumerate(source_candidates):
+            rrf = weight / (k + rank + 1)
+            sid = c.source_id
+            rrf_scores[sid] = rrf_scores.get(sid, 0.0) + rrf
+            if sid not in best_candidate or c.score > best_candidate[sid].score:
+                best_candidate[sid] = c
+
+    for sid, rrf_score in rrf_scores.items():
+        best_candidate[sid].score = round(min(rrf_score * 100, 1.0), 4)
+
+    return sorted(best_candidate.values(), key=lambda c: c.score, reverse=True)
+
+
+# ---------------------------------------------------------------------------
+# Evidence builder + orchestrator
+# ---------------------------------------------------------------------------
+
 async def _to_evidence(candidate: Candidate) -> EvidencePacketResponse | None:
     citation = await resolve_scripture_citation(
         candidate.source_id,
@@ -260,7 +404,7 @@ async def _to_evidence(candidate: Candidate) -> EvidencePacketResponse | None:
 
 
 async def search_evidence(request: SearchRequest) -> SearchResponse:
-    """Run available retrieval paths and return citation-ready evidence."""
+    """Run all available retrieval paths and return citation-ready evidence."""
     started = time.perf_counter()
     understanding = understand_query(request)
     warnings: list[str] = []
@@ -269,17 +413,21 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
     if understanding.canonical_reference:
         candidates.extend(await _reference_candidates(understanding.canonical_reference))
 
-    candidates.extend(await _graph_concept_candidates(understanding))
-    candidates.extend(await _keyword_candidates(request))
+    retrieval_results = await asyncio.gather(
+        _graph_concept_candidates(understanding),
+        _keyword_candidates(request),
+        _vector_candidates(request, understanding),
+        _fulltext_candidates(request),
+        return_exceptions=True,
+    )
+    for result in retrieval_results:
+        if isinstance(result, list):
+            candidates.extend(result)
+        elif isinstance(result, Exception):
+            warnings.append(f"Retrieval path failed: {result}")
 
-    # De-duplicate by source id, keeping highest score.
-    by_source: dict[str, Candidate] = {}
-    for candidate in candidates:
-        existing = by_source.get(candidate.source_id)
-        if existing is None or candidate.score > existing.score:
-            by_source[candidate.source_id] = candidate
+    ranked = _fuse_candidates(candidates)
 
-    ranked = sorted(by_source.values(), key=lambda c: c.score, reverse=True)
     evidence: list[EvidencePacketResponse] = []
     for candidate in ranked[: request.limit]:
         packet = await _to_evidence(candidate)

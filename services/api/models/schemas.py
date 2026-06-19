@@ -28,7 +28,7 @@ class ScriptureBase(BaseModel):
         ...,
         description="Scripture category",
         examples=["gita"],
-        pattern="^(veda|upanishad|gita|purana|ramayana|mahabharata|commentary)$",
+        pattern="^(veda|upanishad|gita|purana|ramayana|mahabharata|commentary|shastra)$",
     )
     language: str = Field("sanskrit", description="Primary language")
     period: str | None = Field(None, description="Historical period estimate")
@@ -380,3 +380,51 @@ class CorpusStatusResponse(BaseModel):
     scriptures: list[ScriptureCorpusStatus]
     totals: dict[str, int]
     blockers: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# UPLOADS
+# =============================================================================
+
+
+class UploadResponse(BaseModel):
+    """Response body for an upload record."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    user_id: str
+    filename: str
+    file_type: str
+    storage_key: str
+    status: str
+    title: str | None = None
+    scripture_id: str | None = None
+    language: str = "en"
+    size_bytes: int | None = None
+    error_message: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    uploaded_at: datetime
+    chunk_count: int = 0
+
+
+class UploadListResponse(BaseModel):
+    """Paginated list of uploads."""
+
+    uploads: list[UploadResponse]
+    total: int
+    page: int = 1
+    per_page: int = 20
+
+
+class ChunkResponse(BaseModel):
+    """Response body for a text chunk extracted from an upload."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    upload_id: str
+    chunk_index: int
+    content: str
+    page_start: int | None = None
+    page_end: int | None = None

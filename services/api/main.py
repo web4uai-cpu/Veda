@@ -38,6 +38,7 @@ from routers.graph import router as graph_router
 from routers.search import router as search_router
 from routers.citations import router as citations_router
 from routers.corpus import router as corpus_router
+from routers.uploads import router as upload_router
 
 # =============================================================================
 # LOGGING
@@ -180,3 +181,4 @@ app.include_router(graph_router)
 app.include_router(search_router)
 app.include_router(citations_router)
 app.include_router(corpus_router)
+app.include_router(upload_router)

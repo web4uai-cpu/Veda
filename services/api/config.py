@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-large"
     embedding_dimensions: int = 3072
 
+    # --- Admin ---
+    admin_api_key: str = ""
+
     # --- CORS ---
     cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 

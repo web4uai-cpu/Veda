@@ -21,8 +21,9 @@ const CATEGORY_ORDER = ['veda', 'upanishad', 'gita', 'ramayana', 'mahabharata', 
 function groupByCategory(scriptures: Scripture[]): { category: string; label: string; items: Scripture[] }[] {
   const grouped: Record<string, Scripture[]> = {};
   for (const s of scriptures) {
-    if (!grouped[s.category]) grouped[s.category] = [];
-    grouped[s.category].push(s);
+    const cat = s.category;
+    if (!grouped[cat]) grouped[cat] = [];
+    (grouped[cat] as Scripture[]).push(s);
   }
 
   return CATEGORY_ORDER

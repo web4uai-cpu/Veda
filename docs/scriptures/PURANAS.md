@@ -116,43 +116,31 @@ Numerous subsidiary Puranas
 
 # Eighteen Mahapuranas
 
-```text
-Brahma Purana
+| # | Name | Sanskrit | Abbr | Group | Shlokas | Period |
+|---|---|---|---|---|---|---|
+| 1 | Brahma Purana | ब्रह्मपुराण | BrP | Brahma | 10,000 | ~900-1200 CE |
+| 2 | Padma Purana | पद्मपुराण | PdP | Brahma | 55,000 | ~750-1200 CE |
+| 3 | Vishnu Purana | विष्णुपुराण | VP | Vishnu | 23,000 | ~400 BCE-400 CE |
+| 4 | Shiva Purana | शिवपुराण | ShP | Shiva | 24,000 | ~400-1000 CE |
+| 5 | Bhagavata Purana | भागवतपुराण | BhP | Vishnu | 18,000 | ~500-1000 CE |
+| 6 | Narada Purana | नारदपुराण | NrP | Vishnu | 25,000 | ~900-1200 CE |
+| 7 | Markandeya Purana | मार्कण्डेयपुराण | MkP | Brahma | 9,000 | ~250-700 CE |
+| 8 | Agni Purana | अग्निपुराण | AgP | Brahma | 15,400 | ~700-1100 CE |
+| 9 | Bhavishya Purana | भविष्यपुराण | BvP | Brahma | 14,500 | ~500-1900 CE |
+| 10 | Brahma Vaivarta Purana | ब्रह्मवैवर्तपुराण | BVP | Vishnu | 18,000 | ~700-1200 CE |
+| 11 | Linga Purana | लिङ्गपुराण | LgP | Shiva | 11,000 | ~500-1000 CE |
+| 12 | Varaha Purana | वराहपुराण | VrP | Vishnu | 10,000 | ~1000-1200 CE |
+| 13 | Skanda Purana | स्कन्दपुराण | SkP | Shiva | 81,100 | ~700-1200 CE |
+| 14 | Vamana Purana | वामनपुराण | VmP | Shiva | 10,000 | ~900-1100 CE |
+| 15 | Kurma Purana | कूर्मपुराण | KrP | Vishnu | 17,000 | ~600-900 CE |
+| 16 | Matsya Purana | मत्स्यपुराण | MtP | Vishnu | 14,000 | ~250-500 CE |
+| 17 | Garuda Purana | गरुडपुराण | GrP | Vishnu | 19,000 | ~800-1100 CE |
+| 18 | Brahmanda Purana | ब्रह्माण्डपुराण | BdP | Brahma | 12,000 | ~400-600 CE |
 
-Padma Purana
-
-Vishnu Purana
-
-Shiva Purana
-
-Bhagavata Purana
-
-Narada Purana
-
-Markandeya Purana
-
-Agni Purana
-
-Bhavishya Purana
-
-Brahmavaivarta Purana
-
-Linga Purana
-
-Varaha Purana
-
-Skanda Purana
-
-Vamana Purana
-
-Kurma Purana
-
-Matsya Purana
-
-Garuda Purana
-
-Brahmanda Purana
-```
+Traditional grouping by deity:
+- **Brahma Puranas (Rajasic):** Brahma, Padma, Markandeya, Agni, Bhavishya, Brahmanda
+- **Vishnu Puranas (Sattvic):** Vishnu, Bhagavata, Narada, Brahma Vaivarta, Varaha, Kurma, Matsya, Garuda
+- **Shiva Puranas (Tamasic):** Shiva, Linga, Skanda, Vamana
 
 ---
 

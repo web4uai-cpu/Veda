@@ -63,27 +63,10 @@ async def apply_migration(filepath: Path):
         logger.info("  ⏭️  %s — already applied, skipping", filename)
         return False
 
-    logger.info("  🔄  Applying %s...", filename)
+    logger.info("  Applying %s...", filename)
 
     sql = filepath.read_text(encoding="utf-8")
-
-    # Strip any Supabase-specific auth references that won't work
-    # in a plain PostgreSQL instance (auth.uid() etc.)
-    # We keep the RLS policies but they won't be enforced without Supabase
-    try:
-        await execute(sql)
-    except Exception as e:
-        error_msg = str(e)
-        # Handle common non-critical errors gracefully
-        if "already exists" in error_msg.lower():
-            logger.warning("  ⚠️  %s — objects already exist (safe to continue)", filename)
-        elif "auth.uid" in error_msg or "auth.users" in error_msg:
-            # Supabase auth functions not available in plain PostgreSQL
-            # Apply everything except the RLS policies that reference auth
-            logger.warning("  ⚠️  %s — Supabase auth references skipped (plain PostgreSQL)", filename)
-            await _apply_without_auth_policies(sql)
-        else:
-            raise
+    await _apply_without_auth_policies(sql)
 
     # Record the migration
     await execute(
@@ -107,10 +90,18 @@ async def _apply_without_auth_policies(sql: str):
         if not stmt:
             continue
 
-        # Skip statements referencing Supabase auth
-        if "auth.uid()" in stmt or "auth.users" in stmt:
+        # Skip RLS policies referencing Supabase auth
+        if "auth.uid()" in stmt:
             skip_count += 1
             continue
+
+        # For CREATE TABLE with auth.users FK, strip the FK reference
+        if "auth.users" in stmt:
+            import re
+            stmt = re.sub(r'\s*REFERENCES\s+auth\.users\s*\([^)]*\)', '', stmt)
+            if "auth." in stmt:
+                skip_count += 1
+                continue
 
         try:
             await execute(stmt)

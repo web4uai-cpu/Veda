@@ -161,6 +161,12 @@ async def process_upload(upload_id: str) -> dict[str, Any]:
         )
         logger.info("Processed upload %s: %d chunks", upload_id, len(chunks))
 
+        try:
+            from services.indexing_service import index_upload_chunks
+            await index_upload_chunks(upload_id)
+        except Exception as idx_err:
+            logger.warning("Auto-indexing failed (can be re-triggered): %s", idx_err)
+
     except Exception as e:
         await execute(
             "UPDATE user_uploads SET status = 'failed', error_message = $2 WHERE id = $1",

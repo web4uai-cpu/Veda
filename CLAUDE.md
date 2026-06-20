@@ -140,7 +140,7 @@ Every AI-generated answer MUST include:
 - Citation Agent has VETO AUTHORITY — can reject any response
 - Contradictory views are BOTH returned (no forced merge)
 
-## Current Phase: 5 — Indexing Pipeline (next)
+## Current Phase: 6+ — Hybrid Search is Live
 
 ### Completed
 - Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
@@ -148,10 +148,13 @@ Every AI-generated answer MUST include:
 - Phase 2: Database connections, API routers, Pydantic models, Gita ingestion scripts, citation/evidence schema, evidence search API
 - Phase 3A: Backend stabilization, tests, migration verification, citation/search audit persistence, Redis caching layer
 - Phase 3B: Knowledge Graph sync (PG→Neo4j), concept detection for Gita verses, graph validation command
-- Phase 4: Scripture registry (49 scriptures: 4 Vedas, 18 Puranas, 13 Upanishads, 14 Shastras), admin PDF upload pipeline, API-driven scriptures page, citation integration for uploads (93 tests passing)
+- Phase 4: Scripture registry (49 scriptures), admin PDF upload pipeline, API-driven scriptures page, citation integration for uploads
+- Phase 5: Indexing Pipeline — embedding_service.py (OpenAI text-embedding-3-large), indexing_service.py (Qdrant + OpenSearch bulk), index_corpus CLI, admin indexing API, auto-indexing on upload (104 tests passing)
+- Phase 6: Hybrid Search — already implemented in search_service.py (5 retrieval paths + RRF fusion), activated by Phase 5 indexes
+- Phase 7: Citation Engine — citation validation, confidence scoring, audit logging, upload citations (mostly complete)
 
 ### Next Up
-- Phase 5: Indexing Pipeline (embedding generation, OpenSearch/Qdrant bulk indexing)
-- Phase 6: Hybrid Search (fusion ranking across keyword + vector + graph + citation)
+- Run `python -m services.index_corpus` with OPENAI_API_KEY to populate vector + text indexes
+- Phase 8: Reasoning Layer (LLM-powered /ask and /research endpoints using evidence packets)
 
 See `docs/architecture/BACKEND_ARCHITECTURE.md` for the active backend audit and build order.

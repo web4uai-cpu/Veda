@@ -272,7 +272,8 @@ export default function AskPage() {
               id="ask-submit"
               type="button"
               onClick={() => submitQuestion()}
-              className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] text-white"
+              disabled={status === 'loading' || !question.trim()}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] text-white disabled:opacity-50 disabled:cursor-not-allowed"
               whileHover={{
                 scale: 1.05,
                 boxShadow: '0 0 20px rgba(201, 122, 36, 0.4)',

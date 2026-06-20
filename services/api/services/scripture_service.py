@@ -7,11 +7,26 @@ All SQL lives here; routers are thin HTTP adapters.
 
 from __future__ import annotations
 
+import json
+
 from db import postgres
 from core.errors import NotFoundError
 from services.cache_service import (
     get_cached, set_cached, scripture_list_key, TTL_SCRIPTURE_LIST,
 )
+
+
+def _fix_metadata(row: dict) -> dict:
+    """Ensure metadata is a dict, not a JSON string."""
+    m = row.get("metadata")
+    if isinstance(m, str):
+        try:
+            row["metadata"] = json.loads(m)
+        except (json.JSONDecodeError, TypeError):
+            row["metadata"] = {}
+    elif m is None:
+        row["metadata"] = {}
+    return row
 
 
 _SCRIPTURE_SELECT = """
@@ -51,7 +66,7 @@ async def list_scriptures(
         )
         total = await postgres.fetchval("SELECT COUNT(*) FROM scriptures")
 
-    result_rows = [dict(r) for r in rows]
+    result_rows = [_fix_metadata(dict(r)) for r in rows]
     total_count = total or 0
     await set_cached(key, {"rows": result_rows, "total": total_count}, ttl=TTL_SCRIPTURE_LIST)
     return result_rows, total_count
@@ -63,7 +78,7 @@ async def get_scripture_by_slug(slug: str) -> dict:
     )
     if not row:
         raise NotFoundError("Scripture", slug)
-    return dict(row)
+    return _fix_metadata(dict(row))
 
 
 async def get_scripture_by_id(scripture_id: str) -> dict:
@@ -72,7 +87,7 @@ async def get_scripture_by_id(scripture_id: str) -> dict:
     )
     if not row:
         raise NotFoundError("Scripture", scripture_id)
-    return dict(row)
+    return _fix_metadata(dict(row))
 
 
 async def list_chapters(scripture_id: str) -> tuple[list[dict], str]:

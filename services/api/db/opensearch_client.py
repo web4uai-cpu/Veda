@@ -44,7 +44,7 @@ async def init_opensearch() -> AsyncOpenSearch:
         use_ssl=(scheme == "https"),
         verify_certs=False,  # Local dev — no TLS verification
         ssl_show_warn=False,
-        timeout=30,
+        timeout=5,
     )
 
     # Verify connectivity

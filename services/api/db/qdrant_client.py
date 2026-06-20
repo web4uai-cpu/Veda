@@ -33,7 +33,7 @@ async def init_qdrant() -> AsyncQdrantClient:
         return _client
 
     logger.info("Connecting to Qdrant at %s", settings.qdrant_url)
-    _client = AsyncQdrantClient(url=settings.qdrant_url, timeout=30)
+    _client = AsyncQdrantClient(url=settings.qdrant_url, timeout=5)
 
     # Verify connectivity by listing collections
     collections = await _client.get_collections()

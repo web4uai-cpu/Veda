@@ -61,7 +61,7 @@ class Settings(BaseSettings):
     admin_api_key: str = ""
 
     # --- CORS ---
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:3001"]
+    cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
     @field_validator("database_url")
     @classmethod
@@ -77,12 +77,9 @@ class Settings(BaseSettings):
             raise ValueError(f"embedding_dimensions must be 768, 1536, or 3072 — got {v}")
         return v
 
-    @field_validator("cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [item.strip() for item in v.split(",") if item.strip()]
-        return v
+    @property
+    def cors_origins_list(self) -> list[str]:
+        return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
 
 
 settings = Settings()

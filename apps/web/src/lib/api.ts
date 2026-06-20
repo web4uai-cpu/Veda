@@ -516,6 +516,22 @@ class VedaApiClient {
       headers: { 'X-Admin-Key': adminKey },
     });
   }
+
+  // --- Ask VEDA ---
+
+  async ask(request: { query: string; mode?: SearchMode; include_evidence?: boolean }): Promise<AskResponse> {
+    return this.request('/api/v1/ask', {
+      method: 'POST',
+      body: JSON.stringify({ mode: 'quick', include_evidence: true, ...request }),
+    });
+  }
+
+  async research(request: { query: string; depth?: 'standard' | 'deep' }): Promise<ResearchResponse> {
+    return this.request('/api/v1/research', {
+      method: 'POST',
+      body: JSON.stringify({ depth: 'standard', include_evidence: true, ...request }),
+    });
+  }
 }
 
 export interface Upload {
@@ -533,6 +549,28 @@ export interface Upload {
   metadata: Record<string, unknown>;
   uploaded_at: string;
   chunk_count: number;
+}
+
+export interface AskResponse {
+  query: string;
+  answer: string;
+  citations: Citation[];
+  evidence: EvidencePacket[];
+  confidence: number;
+  model_used: string;
+  query_time_ms: number;
+  warnings: string[];
+}
+
+export interface ResearchResponse {
+  query: string;
+  report: string;
+  citations: Citation[];
+  evidence: EvidencePacket[];
+  confidence: number;
+  model_used: string;
+  query_time_ms: number;
+  warnings: string[];
 }
 
 export const api = new VedaApiClient(API_BASE_URL);

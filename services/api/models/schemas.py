@@ -428,3 +428,55 @@ class ChunkResponse(BaseModel):
     content: str
     page_start: int | None = None
     page_end: int | None = None
+
+
+# =============================================================================
+# ASK (Reasoning)
+# =============================================================================
+
+
+class AskRequest(BaseModel):
+    """Request to the VEDA reasoning endpoint."""
+
+    query: str = Field(..., min_length=2, max_length=1000)
+    mode: SearchMode = Field("quick")
+    include_evidence: bool = Field(True, description="Include raw evidence packets in response")
+
+
+class AskResponse(BaseModel):
+    """LLM-generated answer grounded in citation-verified evidence."""
+
+    query: str
+    answer: str
+    citations: list[CitationResponse] = Field(default_factory=list)
+    evidence: list[EvidencePacketResponse] = Field(default_factory=list)
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    model_used: str = ""
+    query_time_ms: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# RESEARCH
+# =============================================================================
+
+
+class ResearchRequest(BaseModel):
+    """Request for a structured research report."""
+
+    query: str = Field(..., min_length=2, max_length=1000)
+    depth: Literal["standard", "deep"] = "standard"
+    include_evidence: bool = True
+
+
+class ResearchResponse(BaseModel):
+    """Structured research report with multi-source synthesis."""
+
+    query: str
+    report: str
+    citations: list[CitationResponse] = Field(default_factory=list)
+    evidence: list[EvidencePacketResponse] = Field(default_factory=list)
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    model_used: str = ""
+    query_time_ms: float = 0.0
+    warnings: list[str] = Field(default_factory=list)

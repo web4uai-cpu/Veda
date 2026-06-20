@@ -40,6 +40,8 @@ from routers.citations import router as citations_router
 from routers.corpus import router as corpus_router
 from routers.uploads import router as upload_router
 from routers.indexing import router as indexing_router
+from routers.ask import router as ask_router
+from routers.research import router as research_router
 
 # =============================================================================
 # LOGGING
@@ -184,3 +186,5 @@ app.include_router(citations_router)
 app.include_router(corpus_router)
 app.include_router(upload_router)
 app.include_router(indexing_router)
+app.include_router(ask_router)
+app.include_router(research_router)

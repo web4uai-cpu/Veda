@@ -140,7 +140,7 @@ Every AI-generated answer MUST include:
 - Citation Agent has VETO AUTHORITY — can reject any response
 - Contradictory views are BOTH returned (no forced merge)
 
-## Current Phase: 6+ — Hybrid Search is Live
+## Current Phase: 8 Complete — Full Reasoning Stack
 
 ### Completed
 - Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
@@ -149,12 +149,14 @@ Every AI-generated answer MUST include:
 - Phase 3A: Backend stabilization, tests, migration verification, citation/search audit persistence, Redis caching layer
 - Phase 3B: Knowledge Graph sync (PG→Neo4j), concept detection for Gita verses, graph validation command
 - Phase 4: Scripture registry (49 scriptures), admin PDF upload pipeline, API-driven scriptures page, citation integration for uploads
-- Phase 5: Indexing Pipeline — embedding_service.py (OpenAI text-embedding-3-large), indexing_service.py (Qdrant + OpenSearch bulk), index_corpus CLI, admin indexing API, auto-indexing on upload (104 tests passing)
-- Phase 6: Hybrid Search — already implemented in search_service.py (5 retrieval paths + RRF fusion), activated by Phase 5 indexes
-- Phase 7: Citation Engine — citation validation, confidence scoring, audit logging, upload citations (mostly complete)
+- Phase 5: Indexing Pipeline — embedding_service.py (OpenAI text-embedding-3-large), indexing_service.py (Qdrant + OpenSearch bulk), index_corpus CLI, admin indexing API, auto-indexing on upload
+- Phase 6: Hybrid Search — search_service.py (5 retrieval paths + RRF fusion), activated by Phase 5 indexes
+- Phase 7: Citation Engine — citation validation, confidence scoring, audit logging, upload citations
+- Phase 8: Reasoning Layer — rlm_service.py (OpenRouter GPT-5.5 + Claude fallback), POST /api/v1/ask, POST /api/v1/research, frontend Ask page with generated answers + citations (112 tests passing)
 
 ### Next Up
-- Run `python -m services.index_corpus` with OPENAI_API_KEY to populate vector + text indexes
-- Phase 8: Reasoning Layer (LLM-powered /ask and /research endpoints using evidence packets)
+- Set OPENROUTER_API_KEY + OPENAI_API_KEY in production to enable LLM answers + vector indexing
+- Phase 9: Agent System (domain-specific agents: Veda, Upanishad, Purana, Vedanta, Sanskrit)
+- Phase 10: Production hardening (auth, rate limiting, monitoring, observability)
 
 See `docs/architecture/BACKEND_ARCHITECTURE.md` for the active backend audit and build order.

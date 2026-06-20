@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
-import { api, type EvidencePacket, type SearchMode } from '@/lib/api';
+import { api, type AskResponse, type EvidencePacket, type SearchMode } from '@/lib/api';
 
 const KnowledgeOrb = dynamic(() => import('@/components/three/KnowledgeOrb'), { ssr: false });
 
@@ -24,8 +24,7 @@ const MODES = [
 export default function AskPage() {
   const [question, setQuestion] = useState('');
   const [mode, setMode] = useState<SearchMode>('quick');
-  const [results, setResults] = useState<EvidencePacket[]>([]);
-  const [warnings, setWarnings] = useState<string[]>([]);
+  const [askResponse, setAskResponse] = useState<AskResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
 
@@ -38,18 +37,12 @@ export default function AskPage() {
     setError(null);
 
     try {
-      const response = await api.search({
-        query,
-        mode,
-        limit: mode === 'quick' ? 5 : 10,
-      });
-      setResults(response.results);
-      setWarnings(response.warnings);
+      const response = await api.ask({ query, mode });
+      setAskResponse(response);
       setStatus('ready');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to reach VEDA API');
-      setResults([]);
-      setWarnings([]);
+      setAskResponse(null);
       setStatus('error');
     }
   }
@@ -150,12 +143,15 @@ export default function AskPage() {
               ))}
             </motion.div>
 
-            {/* Evidence Results */}
+            {/* Results */}
             {(status === 'loading' || status === 'ready' || status === 'error') && (
               <div className="mt-8 w-full max-w-3xl text-left">
                 {status === 'loading' && (
                   <div className="rounded-2xl border border-[hsl(var(--border))] p-5 text-sm text-[hsl(var(--muted-foreground))] glass">
-                    Searching verified sources and preparing citation-ready evidence...
+                    <div className="flex items-center gap-3">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[hsl(var(--primary))] border-t-transparent" />
+                      Searching scriptures, generating cited answer...
+                    </div>
                   </div>
                 )}
 
@@ -165,18 +161,45 @@ export default function AskPage() {
                   </div>
                 )}
 
-                {status === 'ready' && (
+                {status === 'ready' && askResponse && (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border border-[hsl(var(--border))] p-4 glass">
-                      <p className="text-sm font-medium text-[hsl(var(--foreground))]">
-                        Evidence-first answer mode
-                      </p>
-                      <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">
-                        VEDA is showing verified evidence now. Full generated answers unlock after citation validation and RLM are complete.
-                      </p>
+                    {/* Generated Answer */}
+                    <div className="rounded-2xl border border-[hsl(var(--primary))]/20 bg-[hsl(var(--primary))]/5 p-5">
+                      <div className="mb-3 flex items-center justify-between">
+                        <span className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--primary))]">
+                          VEDA Answer
+                        </span>
+                        <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                          {askResponse.confidence > 0 && (
+                            <span className={`rounded-full px-2 py-0.5 ${
+                              askResponse.confidence >= 0.8 ? 'bg-emerald-500/15 text-emerald-400'
+                              : askResponse.confidence >= 0.5 ? 'bg-amber-500/15 text-amber-400'
+                              : 'bg-red-500/15 text-red-400'
+                            }`}>
+                              {Math.round(askResponse.confidence * 100)}% confidence
+                            </span>
+                          )}
+                          {askResponse.model_used && askResponse.model_used !== 'none' && askResponse.model_used !== 'error' && (
+                            <span>{Math.round(askResponse.query_time_ms)}ms</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="prose prose-invert prose-sm max-w-none text-[hsl(var(--foreground))]">
+                        <p className="whitespace-pre-line leading-relaxed">{askResponse.answer}</p>
+                      </div>
+                      {askResponse.citations.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          {askResponse.citations.map((c) => (
+                            <span key={c.citation_id} className="rounded-full bg-[hsl(var(--primary))]/10 px-2 py-0.5 text-[11px] text-[hsl(var(--primary))]">
+                              {c.reference}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {warnings.map((warning) => (
+                    {/* Warnings */}
+                    {askResponse.warnings.map((warning) => (
                       <div
                         key={warning}
                         className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-100"
@@ -185,27 +208,35 @@ export default function AskPage() {
                       </div>
                     ))}
 
-                    {results.map((packet) => (
-                      <article
-                        key={packet.packet_id}
-                        className="rounded-2xl border border-[hsl(var(--border))] p-5 glass"
-                      >
-                        <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
-                          <span className="rounded-full bg-[hsl(var(--primary))]/10 px-2 py-1 text-[hsl(var(--primary))]">
-                            {packet.citation.reference}
-                          </span>
-                          <span>{packet.citation.source_name}</span>
-                          <span>Confidence {Math.round(packet.citation.confidence * 100)}%</span>
-                          <span>Evidence {packet.citation.evidence_level}</span>
-                        </div>
-                        <h2 className="mb-2 text-base font-semibold text-[hsl(var(--foreground))]">
-                          {packet.title}
-                        </h2>
-                        <p className="whitespace-pre-line text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
-                          {packet.content}
-                        </p>
-                      </article>
-                    ))}
+                    {/* Evidence Packets */}
+                    {askResponse.evidence.length > 0 && (
+                      <>
+                        <h3 className="pt-2 text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                          Source Evidence ({askResponse.evidence.length})
+                        </h3>
+                        {askResponse.evidence.map((packet) => (
+                          <article
+                            key={packet.packet_id}
+                            className="rounded-2xl border border-[hsl(var(--border))] p-5 glass"
+                          >
+                            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                              <span className="rounded-full bg-[hsl(var(--primary))]/10 px-2 py-1 text-[hsl(var(--primary))]">
+                                {packet.citation.reference}
+                              </span>
+                              <span>{packet.citation.source_name}</span>
+                              <span>Confidence {Math.round(packet.citation.confidence * 100)}%</span>
+                              <span>Evidence {packet.citation.evidence_level}</span>
+                            </div>
+                            <h2 className="mb-2 text-base font-semibold text-[hsl(var(--foreground))]">
+                              {packet.title}
+                            </h2>
+                            <p className="whitespace-pre-line text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                              {packet.content}
+                            </p>
+                          </article>
+                        ))}
+                      </>
+                    )}
                   </div>
                 )}
               </div>

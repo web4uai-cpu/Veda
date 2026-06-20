@@ -187,7 +187,7 @@ export default function ScripturesPage() {
 // ---------------------------------------------------------------------------
 
 function CapsuleCard({ scripture }: { scripture: Scripture }) {
-  const hasContent = scripture.verse_count > 0;
+  const hasContent = scripture.verse_count > 0 || scripture.chapter_count > 0;
   const metric = getMetricLabel(scripture);
   const style = getStyle(scripture.category);
 

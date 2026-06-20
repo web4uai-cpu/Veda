@@ -4,11 +4,12 @@ const ts = '2026-01-01T00:00:00Z';
 const s = (
   slug: string, name: string, sanskrit_name: string, category: string,
   metadata: Record<string, unknown> = {},
+  chapter_count = 0, verse_count = 0,
 ): Scripture => ({
   id: `scp_${slug}`, slug, name, sanskrit_name, category,
   language: 'sanskrit', period: null, description: null,
   is_canonical: true, metadata, created_at: ts,
-  chapter_count: 0, verse_count: 0,
+  chapter_count, verse_count,
 });
 
 export const FALLBACK_SCRIPTURES: Scripture[] = [
@@ -19,7 +20,7 @@ export const FALLBACK_SCRIPTURES: Scripture[] = [
   s('atharvaveda', 'Atharvaveda', 'अथर्ववेद', 'veda', { total_mantras: 5977, canonical_abbreviation: 'AV' }),
 
   // Bhagavad Gita
-  s('bhagavad-gita', 'Bhagavad Gita', 'भगवद्गीता', 'gita', { total_chapters: 18, total_verses: 700 }),
+  s('bhagavad-gita', 'Bhagavad Gita', 'भगवद्गीता', 'gita', { total_chapters: 18, total_verses: 700 }, 18, 700),
 
   // Itihasa
   s('ramayana', 'Ramayana', 'रामायण', 'ramayana', { total_shlokas: 24000 }),

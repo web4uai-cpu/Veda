@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem, FloatingCard, AnimatedCounter, TextReveal } from '@/components/animations';
 import { api, type Scripture } from '@/lib/api';
 
+const DEFAULT_CONFIG = { label: 'Other', gradient: 'from-gray-500/15 to-slate-500/10', border: 'border-gray-500/20' };
+
 const CATEGORY_CONFIG: Record<string, { label: string; gradient: string; border: string }> = {
   veda:        { label: 'Vedas (Shruti)',         gradient: 'from-amber-500/15 to-orange-500/10',  border: 'border-amber-500/20' },
   upanishad:   { label: 'Upanishads (Vedanta)',   gradient: 'from-blue-500/15 to-indigo-500/10',   border: 'border-blue-500/20' },
@@ -114,7 +116,7 @@ export default function ScripturesPage() {
       )}
 
       {!loading && !error && groups.map((group, groupIndex) => {
-        const config = CATEGORY_CONFIG[group.category] ?? CATEGORY_CONFIG.commentary;
+        const config = CATEGORY_CONFIG[group.category] ?? DEFAULT_CONFIG;
 
         return (
           <section key={group.category} className="mb-12">

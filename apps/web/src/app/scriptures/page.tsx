@@ -2,229 +2,233 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ScrollReveal, ScrollRevealItem, FloatingCard, AnimatedCounter, TextReveal } from '@/components/animations';
+import { ScrollReveal, ScrollRevealItem, TextReveal } from '@/components/animations';
 import { api, type Scripture } from '@/lib/api';
+import { FALLBACK_SCRIPTURES } from '@/lib/scripture-fallback';
 
-const DEFAULT_CONFIG = { label: 'Other', gradient: 'from-gray-500/15 to-slate-500/10', border: 'border-gray-500/20' };
+// ---------------------------------------------------------------------------
+// Category styling & ordering
+// ---------------------------------------------------------------------------
 
-const CATEGORY_CONFIG: Record<string, { label: string; gradient: string; border: string }> = {
-  veda:        { label: 'Vedas (Shruti)',         gradient: 'from-amber-500/15 to-orange-500/10',  border: 'border-amber-500/20' },
-  upanishad:   { label: 'Upanishads (Vedanta)',   gradient: 'from-blue-500/15 to-indigo-500/10',   border: 'border-blue-500/20' },
-  gita:        { label: 'Bhagavad Gita',          gradient: 'from-amber-500/15 to-orange-500/10',  border: 'border-amber-500/20' },
-  ramayana:    { label: 'Ramayana (Itihasa)',     gradient: 'from-rose-500/15 to-pink-500/10',     border: 'border-rose-500/20' },
-  mahabharata: { label: 'Mahabharata (Itihasa)',  gradient: 'from-purple-500/15 to-violet-500/10', border: 'border-purple-500/20' },
-  purana:      { label: 'Puranas (Smriti)',        gradient: 'from-cyan-500/15 to-sky-500/10',      border: 'border-cyan-500/20' },
-  shastra:     { label: 'Shastras (Treatises)',    gradient: 'from-emerald-500/15 to-teal-500/10',  border: 'border-emerald-500/20' },
-  commentary:  { label: 'Commentaries',           gradient: 'from-gray-500/15 to-slate-500/10',    border: 'border-gray-500/20' },
+const CATEGORY_CONFIG: Record<string, {
+  label: string;
+  accent: string;
+  bg: string;
+  border: string;
+  pill: string;
+}> = {
+  veda:        { label: 'Vedas (Shruti)',        accent: 'border-l-amber-500',   bg: 'bg-amber-500/5  hover:bg-amber-500/10',   border: 'border-amber-500/15',  pill: 'bg-amber-500/15 text-amber-400' },
+  upanishad:   { label: 'Upanishads (Vedanta)',  accent: 'border-l-blue-500',    bg: 'bg-blue-500/5   hover:bg-blue-500/10',    border: 'border-blue-500/15',   pill: 'bg-blue-500/15 text-blue-400' },
+  gita:        { label: 'Bhagavad Gita',         accent: 'border-l-orange-500',  bg: 'bg-orange-500/5 hover:bg-orange-500/10',  border: 'border-orange-500/15', pill: 'bg-orange-500/15 text-orange-400' },
+  ramayana:    { label: 'Itihasa',               accent: 'border-l-rose-500',    bg: 'bg-rose-500/5   hover:bg-rose-500/10',    border: 'border-rose-500/15',   pill: 'bg-rose-500/15 text-rose-400' },
+  mahabharata: { label: 'Itihasa',               accent: 'border-l-purple-500',  bg: 'bg-purple-500/5 hover:bg-purple-500/10',  border: 'border-purple-500/15', pill: 'bg-purple-500/15 text-purple-400' },
+  purana:      { label: 'Puranas (Smriti)',       accent: 'border-l-cyan-500',    bg: 'bg-cyan-500/5   hover:bg-cyan-500/10',    border: 'border-cyan-500/15',   pill: 'bg-cyan-500/15 text-cyan-400' },
+  shastra:     { label: 'Shastras (Treatises)',   accent: 'border-l-emerald-500', bg: 'bg-emerald-500/5 hover:bg-emerald-500/10', border: 'border-emerald-500/15', pill: 'bg-emerald-500/15 text-emerald-400' },
+  commentary:  { label: 'Commentaries',          accent: 'border-l-slate-500',   bg: 'bg-slate-500/5  hover:bg-slate-500/10',   border: 'border-slate-500/15',  pill: 'bg-slate-500/15 text-slate-400' },
 };
+
+const DEFAULT_STYLE = CATEGORY_CONFIG['commentary']!;
+
+function getStyle(key: string) {
+  return CATEGORY_CONFIG[key] ?? DEFAULT_STYLE;
+}
 
 const CATEGORY_ORDER = ['veda', 'upanishad', 'gita', 'ramayana', 'mahabharata', 'purana', 'shastra', 'commentary'];
 
-function groupByCategory(scriptures: Scripture[]): { category: string; label: string; items: Scripture[] }[] {
-  const grouped = new Map<string, Scripture[]>();
-  for (const s of scriptures) {
-    const list = grouped.get(s.category);
-    if (list) {
-      list.push(s);
-    } else {
-      grouped.set(s.category, [s]);
-    }
-  }
+// Merge ramayana + mahabharata into a single "Itihasa" display group
+const DISPLAY_GROUPS: { key: string; label: string; categories: string[] }[] = [
+  { key: 'veda',      label: 'Vedas (Shruti)',       categories: ['veda'] },
+  { key: 'upanishad', label: 'Upanishads (Vedanta)',  categories: ['upanishad'] },
+  { key: 'itihasa',   label: 'Itihasa & Gita',       categories: ['gita', 'ramayana', 'mahabharata'] },
+  { key: 'purana',    label: 'Puranas (Smriti)',      categories: ['purana'] },
+  { key: 'shastra',   label: 'Shastras (Treatises)',  categories: ['shastra'] },
+  { key: 'commentary', label: 'Commentaries',         categories: ['commentary'] },
+];
 
-  return CATEGORY_ORDER
-    .filter((cat) => (grouped.get(cat)?.length ?? 0) > 0)
-    .map((cat) => ({
-      category: cat,
-      label: CATEGORY_CONFIG[cat]?.label ?? cat,
-      items: grouped.get(cat)!,
-    }));
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+interface DisplayGroup {
+  key: string;
+  label: string;
+  items: Scripture[];
 }
 
-function getCountLabel(scripture: Scripture): string {
-  const meta = scripture.metadata as Record<string, number>;
-  if (scripture.verse_count > 0) {
-    return `${scripture.chapter_count} ${scripture.chapter_count === 1 ? 'chapter' : 'chapters'} · ${scripture.verse_count} verses`;
+function buildDisplayGroups(scriptures: Scripture[]): DisplayGroup[] {
+  const byCat = new Map<string, Scripture[]>();
+  for (const s of scriptures) {
+    const list = byCat.get(s.category);
+    if (list) list.push(s);
+    else byCat.set(s.category, [s]);
   }
-  const mantras = meta?.total_mantras;
-  const shlokas = meta?.total_shlokas;
-  const sutras = meta?.total_sutras;
-  const karikas = meta?.total_karikas;
-  if (mantras) return `${mantras.toLocaleString()} mantras`;
-  if (shlokas) return `${shlokas.toLocaleString()} shlokas`;
-  if (sutras) return `${sutras.toLocaleString()} sutras`;
-  if (karikas) return `${karikas.toLocaleString()} karikas`;
+
+  return DISPLAY_GROUPS
+    .map((dg) => ({
+      key: dg.key,
+      label: dg.label,
+      items: dg.categories.flatMap((cat) => byCat.get(cat) ?? []),
+    }))
+    .filter((g) => g.items.length > 0);
+}
+
+function getMetricLabel(scripture: Scripture): string {
+  const m = scripture.metadata as Record<string, number | string>;
+  if (scripture.verse_count > 0) {
+    return `${scripture.verse_count.toLocaleString()} verses`;
+  }
+  if (m.total_mantras) return `${Number(m.total_mantras).toLocaleString()} mantras`;
+  if (m.total_shlokas) return `${Number(m.total_shlokas).toLocaleString()} shlokas`;
+  if (m.total_sutras)  return `${Number(m.total_sutras).toLocaleString()} sutras`;
+  if (m.total_karikas) return `${Number(m.total_karikas).toLocaleString()} karikas`;
+  if (m.total_verses)  return `${Number(m.total_verses).toLocaleString()} verses`;
+  if (m.total_chapters) return `${Number(m.total_chapters)} chapters`;
+  if (m.author) return String(m.author);
   return '';
 }
 
+function mergeWithFallback(apiData: Scripture[]): Scripture[] {
+  if (apiData.length >= 40) return apiData;
+  const slugs = new Set(apiData.map((s) => s.slug));
+  const merged = [...apiData];
+  for (const fb of FALLBACK_SCRIPTURES) {
+    if (!slugs.has(fb.slug)) merged.push(fb);
+  }
+  return merged;
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 export default function ScripturesPage() {
-  const [scriptures, setScriptures] = useState<Scripture[]>([]);
+  const [scriptures, setScriptures] = useState<Scripture[]>(FALLBACK_SCRIPTURES);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     api
       .getScriptures(undefined, 1, 200)
       .then((res) => {
-        setScriptures(res.scriptures);
+        setScriptures(mergeWithFallback(res.scriptures));
         setLoading(false);
       })
-      .catch((err) => {
-        setError(err.message ?? 'Failed to load scriptures');
+      .catch(() => {
+        setScriptures(FALLBACK_SCRIPTURES);
         setLoading(false);
       });
   }, []);
 
-  const groups = groupByCategory(scriptures);
+  const groups = buildDisplayGroups(scriptures);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
-      <div className="mb-10">
+    <div className="mx-auto max-w-6xl px-4 py-8 lg:px-8">
+      {/* Header */}
+      <div className="mb-8">
         <ScrollReveal animation="fade-up">
-          <h1 className="scripture-title mb-2 text-3xl font-bold text-[hsl(var(--foreground))]">
+          <h1 className="scripture-title mb-1 text-3xl font-bold text-[hsl(var(--foreground))]">
             <TextReveal text="Scriptures" />
           </h1>
         </ScrollReveal>
-        <ScrollReveal animation="fade-up" delay={0.2}>
-          <p className="text-lg text-[hsl(var(--muted-foreground))]">
-            Browse sacred texts with Sanskrit, transliteration, and multiple translations
+        <ScrollReveal animation="fade-up" delay={0.15}>
+          <p className="text-base text-[hsl(var(--muted-foreground))]">
+            {scriptures.length} sacred texts across {groups.length} traditions
           </p>
         </ScrollReveal>
       </div>
 
-      {loading && (
-        <div className="space-y-8">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse">
-              <div className="mb-4 h-5 w-40 rounded bg-[hsl(var(--muted))]" />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[1, 2].map((j) => (
-                  <div key={j} className="knowledge-card h-32 rounded-xl bg-[hsl(var(--muted))]" />
-                ))}
-              </div>
+      {/* Category Sections */}
+      {groups.map((group, gi) => (
+        <section key={group.key} className="mb-8">
+          {/* Section header */}
+          <ScrollReveal animation="slide-right" delay={gi * 0.06}>
+            <div className="mb-3 flex items-center gap-3">
+              <motion.h2
+                className="text-sm font-semibold uppercase tracking-widest text-[hsl(var(--muted-foreground))]"
+                whileInView={{ backgroundSize: ['0% 2px', '100% 2px'] }}
+                style={{
+                  backgroundImage: 'linear-gradient(to right, hsl(32, 76%, 52%), transparent)',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'bottom left',
+                  paddingBottom: '3px',
+                }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+              >
+                {group.label}
+              </motion.h2>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                getStyle(group.key).pill
+              }`}>
+                {group.items.length}
+              </span>
             </div>
-          ))}
-        </div>
+          </ScrollReveal>
+
+          {/* Card grid */}
+          <ScrollReveal stagger staggerDelay={0.04} className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {group.items.map((scripture) => (
+              <ScrollRevealItem key={scripture.slug} animation="fade-up">
+                <CapsuleCard scripture={scripture} />
+              </ScrollRevealItem>
+            ))}
+          </ScrollReveal>
+        </section>
+      ))}
+
+      {/* Loading overlay — only on initial render while API is fetching */}
+      {loading && (
+        <div className="pointer-events-none absolute inset-0" aria-hidden />
       )}
-
-      {error && (
-        <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6 text-center">
-          <p className="text-red-500">{error}</p>
-          <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
-            Make sure the API server is running at {process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'}
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && groups.map((group, groupIndex) => {
-        const config = CATEGORY_CONFIG[group.category] ?? DEFAULT_CONFIG;
-
-        return (
-          <section key={group.category} className="mb-12">
-            <ScrollReveal animation="slide-right" delay={groupIndex * 0.1}>
-              <h2 className="mb-4 text-lg font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                <motion.span
-                  className="inline-block"
-                  whileInView={{
-                    backgroundSize: ['0% 2px', '100% 2px'],
-                  }}
-                  style={{
-                    backgroundImage: 'linear-gradient(to right, hsl(32, 76%, 52%), transparent)',
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'bottom left',
-                    paddingBottom: '4px',
-                  }}
-                  transition={{ delay: 0.3, duration: 0.8 }}
-                >
-                  {group.label}
-                </motion.span>
-              </h2>
-            </ScrollReveal>
-
-            <ScrollReveal stagger staggerDelay={0.08} className="grid gap-4 sm:grid-cols-2">
-              {group.items.map((scripture) => {
-                const hasContent = scripture.verse_count > 0;
-                const countLabel = getCountLabel(scripture);
-
-                return (
-                  <ScrollRevealItem key={scripture.slug} animation="fade-up">
-                    <FloatingCard
-                      className={`knowledge-card group bg-gradient-to-br ${config.gradient} border ${config.border} transition-all`}
-                      tiltMax={5}
-                    >
-                      {hasContent ? (
-                        <a
-                          href={`/scriptures/${scripture.slug}`}
-                          id={`scripture-${scripture.slug}`}
-                          className="block"
-                        >
-                          <ScriptureCardContent scripture={scripture} countLabel={countLabel} hasContent />
-                        </a>
-                      ) : (
-                        <div className="relative" id={`scripture-${scripture.slug}`}>
-                          <div className="absolute right-0 top-0 rounded-bl-lg rounded-tr-xl bg-[hsl(var(--muted))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                            Coming Soon
-                          </div>
-                          <ScriptureCardContent scripture={scripture} countLabel={countLabel} hasContent={false} />
-                        </div>
-                      )}
-                    </FloatingCard>
-                  </ScrollRevealItem>
-                );
-              })}
-            </ScrollReveal>
-          </section>
-        );
-      })}
     </div>
   );
 }
 
-function ScriptureCardContent({
-  scripture,
-  countLabel,
-  hasContent,
-}: {
-  scripture: Scripture;
-  countLabel: string;
-  hasContent: boolean;
-}) {
-  return (
-    <>
-      <div className="flex items-start justify-between">
-        <div>
-          {scripture.sanskrit_name && (
-            <p className="sanskrit text-sm text-[hsl(var(--muted-foreground))]">
-              {scripture.sanskrit_name}
-            </p>
-          )}
-          <h3
-            className={`scripture-title text-xl font-semibold text-[hsl(var(--foreground))] transition-colors ${
-              hasContent ? 'group-hover:text-[hsl(var(--primary))]' : 'opacity-80'
-            }`}
-          >
-            {scripture.name}
-          </h3>
-        </div>
-      </div>
-      {scripture.description && (
-        <p className="mt-2 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
-          {scripture.description}
+// ---------------------------------------------------------------------------
+// Capsule Card
+// ---------------------------------------------------------------------------
+
+function CapsuleCard({ scripture }: { scripture: Scripture }) {
+  const hasContent = scripture.verse_count > 0;
+  const metric = getMetricLabel(scripture);
+  const style = getStyle(scripture.category);
+
+  const inner = (
+    <div
+      className={`
+        relative rounded-xl border-l-[3px] border ${style.accent} ${style.border}
+        ${style.bg} px-3.5 py-2.5
+        transition-all duration-200
+        ${hasContent ? 'cursor-pointer hover:translate-y-[-1px] hover:shadow-md' : 'opacity-70'}
+      `}
+    >
+      {!hasContent && (
+        <span className="absolute right-2 top-2 flex h-2 w-2">
+          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-40" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500/60" />
+        </span>
+      )}
+
+      {scripture.sanskrit_name && (
+        <p className="font-devanagari text-[11px] leading-tight text-[hsl(var(--muted-foreground))] truncate">
+          {scripture.sanskrit_name}
         </p>
       )}
-      {countLabel && (
-        <div className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">
-          {hasContent ? (
-            <span>
-              <AnimatedCounter target={scripture.chapter_count} duration={1.5} />{' '}
-              {scripture.chapter_count === 1 ? 'chapter' : 'chapters'}
-              <span className="mx-1">·</span>
-              <AnimatedCounter target={scripture.verse_count} duration={2} /> verses
-            </span>
-          ) : (
-            <span>{countLabel}</span>
-          )}
-        </div>
+      <h3 className={`scripture-title text-[13px] font-semibold leading-snug text-[hsl(var(--foreground))] truncate ${
+        hasContent ? 'group-hover:text-[hsl(var(--primary))]' : ''
+      }`}>
+        {scripture.name}
+      </h3>
+      {metric && (
+        <p className="mt-0.5 text-[11px] text-[hsl(var(--muted-foreground))]">{metric}</p>
       )}
-    </>
+    </div>
   );
+
+  if (hasContent) {
+    return (
+      <a href={`/scriptures/${scripture.slug}`} className="group block">
+        {inner}
+      </a>
+    );
+  }
+  return inner;
 }

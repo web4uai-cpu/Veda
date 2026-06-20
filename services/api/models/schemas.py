@@ -10,7 +10,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, ConfigDict
+import json as _json
+
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 # =============================================================================
@@ -35,6 +37,16 @@ class ScriptureBase(BaseModel):
     description: str | None = None
     is_canonical: bool = Field(True, description="Whether this is a canonical (read-only) source")
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def parse_metadata(cls, v: Any) -> dict[str, Any]:
+        if isinstance(v, str):
+            try:
+                return _json.loads(v)
+            except (ValueError, TypeError):
+                return {}
+        return v if isinstance(v, dict) else {}
 
 
 class ScriptureCreate(ScriptureBase):

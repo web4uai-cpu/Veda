@@ -22,50 +22,29 @@ async def health_check():
     """
     Comprehensive health check.
     Probes all connected services and reports their status.
-    Overall status is 'healthy' if all services are operational,
-    'degraded' if some are down, 'unhealthy' if all are down.
+    Uses asyncio.wait_for to cap each probe at 3 seconds so the
+    endpoint responds quickly even when databases are unreachable.
     """
-    services: dict[str, ServiceHealth] = {}
+    import asyncio
 
-    # API itself is always operational if we reach here
+    services: dict[str, ServiceHealth] = {}
     services["api"] = ServiceHealth(status="operational", version="0.2.0")
 
-    # PostgreSQL
-    try:
-        pg_health = await postgres.check_health()
-        services["database"] = ServiceHealth(**pg_health)
-    except Exception as e:
-        services["database"] = ServiceHealth(status="not_connected", error=str(e))
+    async def _probe(name: str, check_fn):
+        try:
+            result = await asyncio.wait_for(check_fn(), timeout=3.0)
+            services[name] = ServiceHealth(**result)
+        except Exception as e:
+            services[name] = ServiceHealth(status="not_connected", error=str(e)[:100])
 
-    # Neo4j
-    try:
-        neo_health = await neo4j_client.check_health()
-        services["neo4j"] = ServiceHealth(**neo_health)
-    except Exception as e:
-        services["neo4j"] = ServiceHealth(status="not_connected", error=str(e))
+    await asyncio.gather(
+        _probe("database", postgres.check_health),
+        _probe("neo4j", neo4j_client.check_health),
+        _probe("redis", redis_client.check_health),
+        _probe("qdrant", qdrant_client.check_health),
+        _probe("opensearch", opensearch_client.check_health),
+    )
 
-    # Redis
-    try:
-        redis_health = await redis_client.check_health()
-        services["redis"] = ServiceHealth(**redis_health)
-    except Exception as e:
-        services["redis"] = ServiceHealth(status="not_connected", error=str(e))
-
-    # Qdrant
-    try:
-        qdrant_health = await qdrant_client.check_health()
-        services["qdrant"] = ServiceHealth(**qdrant_health)
-    except Exception as e:
-        services["qdrant"] = ServiceHealth(status="not_connected", error=str(e))
-
-    # OpenSearch
-    try:
-        os_health = await opensearch_client.check_health()
-        services["opensearch"] = ServiceHealth(**os_health)
-    except Exception as e:
-        services["opensearch"] = ServiceHealth(status="not_connected", error=str(e))
-
-    # Determine overall status
     statuses = [s.status for s in services.values()]
     operational_count = sum(1 for s in statuses if s == "operational")
 

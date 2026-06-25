@@ -73,8 +73,18 @@ async def lifespan(app: FastAPI):
     Gracefully handles missing services (logs warning, continues).
     """
     logger.info("=" * 60)
-    logger.info("VEDA API v0.2.0 starting — Phase 2: Data Layer")
+    logger.info("VEDA API v0.3.0 starting")
     logger.info("=" * 60)
+
+    # --- Environment audit ---
+    if not settings.openrouter_api_key:
+        logger.warning("OPENROUTER_API_KEY not set — LLM answers disabled")
+    if not settings.openai_api_key:
+        logger.warning("OPENAI_API_KEY not set — vector indexing disabled")
+    if not settings.admin_api_key:
+        logger.warning("ADMIN_API_KEY not set — admin endpoints unprotected")
+    if not settings.firebase_service_account_json and not settings.firebase_service_account_path:
+        logger.warning("Firebase credentials not set — uploads disabled")
 
     # --- Startup ---
     from db.postgres import init_postgres, close_postgres
@@ -157,7 +167,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="VEDA API",
     description="Knowledge Operating System for Sanatan Dharma — REST API Gateway",
-    version="0.2.0",
+    version="0.3.0",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,

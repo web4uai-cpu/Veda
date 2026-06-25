@@ -5,8 +5,9 @@
     "dockerfilePath": "Dockerfile.railway"
   },
   "deploy": {
-    "healthcheckPath": "/",
-    "healthcheckTimeout": 10,
-    "restartPolicyType": "ON_FAILURE"
+    "healthcheckPath": "/api/v1/health",
+    "healthcheckTimeout": 15,
+    "restartPolicyType": "ON_FAILURE",
+    "numReplicas": 1
   }
 }

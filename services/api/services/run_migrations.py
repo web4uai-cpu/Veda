@@ -145,8 +145,7 @@ async def main():
     logger.info("=" * 60)
 
     if not MIGRATIONS_DIR.exists():
-        logger.error("Migrations directory not found: %s", MIGRATIONS_DIR)
-        sys.exit(1)
+        raise FileNotFoundError(f"Migrations directory not found: {MIGRATIONS_DIR}")
 
     # Find all .sql files sorted by name
     migration_files = sorted(MIGRATIONS_DIR.glob("*.sql"))

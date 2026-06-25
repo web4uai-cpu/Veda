@@ -75,14 +75,10 @@ async def run_migrations(request: Request):
     from core.auth import require_admin
     await require_admin(request)
 
-    from services.run_migrations import ensure_migration_tracking, apply_migration
+    from services.run_migrations import ensure_migration_tracking, apply_migration, MIGRATIONS_DIR
     from db import postgres
-    from pathlib import Path
-    import os
 
-    migrations_dir = Path("/app/supabase/migrations")
-    if not migrations_dir.exists():
-        migrations_dir = Path(__file__).resolve().parent.parent.parent.parent / "supabase" / "migrations"
+    migrations_dir = MIGRATIONS_DIR
     if not migrations_dir.exists():
         return {"status": "error", "message": f"Migrations dir not found"}
 

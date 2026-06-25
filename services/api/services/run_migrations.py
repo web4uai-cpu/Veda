@@ -32,10 +32,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger("veda.migrations")
 
-# Path to migrations directory — try Docker path first, then local dev
-_docker_path = Path("/app/supabase/migrations")
+# Path to migrations directory — try co-located, Docker, then local dev paths
+_colocated = Path(__file__).resolve().parent.parent / "migrations"
+_docker_path = Path("/app/migrations")
 _dev_path = Path(__file__).resolve().parent.parent.parent.parent / "supabase" / "migrations"
-MIGRATIONS_DIR = _docker_path if _docker_path.exists() else _dev_path
+MIGRATIONS_DIR = next((p for p in [_colocated, _docker_path, _dev_path] if p.exists()), _dev_path)
 
 
 async def ensure_migration_tracking():

@@ -248,7 +248,12 @@ async def index_all() -> dict[str, Any]:
     logger.info("=" * 60)
 
     scripture_stats = await index_scripture_verses()
-    upload_stats = await index_all_uploads()
+
+    try:
+        upload_stats = await index_all_uploads()
+    except Exception as e:
+        logger.warning("Upload indexing skipped: %s", e)
+        upload_stats = {"uploads_processed": 0, "qdrant_upserted": 0, "opensearch_indexed": 0}
 
     result = {
         "scriptures": scripture_stats,

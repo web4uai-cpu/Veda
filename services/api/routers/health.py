@@ -62,6 +62,13 @@ async def health_check():
     )
 
 
+@router.get("/api/v1/health/metrics")
+async def health_metrics():
+    """Internal metrics snapshot — request counts, latencies, agent usage."""
+    from core.observability import get_metrics_snapshot
+    return get_metrics_snapshot()
+
+
 @router.get("/")
 async def root():
     """Root endpoint — API information and navigation."""
@@ -69,19 +76,18 @@ async def root():
         "name": "VEDA API",
         "description": "Knowledge Operating System for Sanatan Dharma",
         "version": "0.2.0",
-        "phase": "2 — Data Layer",
+        "phase": "10 — Production Hardening",
         "endpoints": {
             "docs": "/docs",
             "health": "/api/v1/health",
+            "metrics": "/api/v1/health/metrics",
             "scriptures": "/api/v1/scriptures",
-            "verses": "/api/v1/verses/{reference}",
-            "graph_concepts": "/api/v1/graph/concepts",
-            "graph_schools": "/api/v1/graph/schools",
-            "graph_persons": "/api/v1/graph/persons",
-            "graph_search": "/api/v1/graph/search?q={query}",
-            "graph_stats": "/api/v1/graph/stats",
             "search": "POST /api/v1/search",
-            "citation_resolve": "POST /api/v1/citations/resolve",
+            "ask": "POST /api/v1/ask",
+            "research": "POST /api/v1/research",
+            "agents_query": "POST /api/v1/agents/query",
+            "agents_list": "/api/v1/agents/list",
+            "graph_search": "/api/v1/graph/search?q={query}",
             "citation_validate": "POST /api/v1/citations/validate",
             "corpus_status": "/api/v1/corpus/status",
         },

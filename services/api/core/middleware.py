@@ -14,6 +14,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from core.errors import VedaError
+from core.observability import record_request
 
 logger = logging.getLogger("veda.api")
 
@@ -66,6 +67,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             )
 
         response.headers["X-Response-Time"] = f"{duration_ms:.2f}ms"
+        record_request(request.url.path, response.status_code, duration_ms)
         return response
 
 

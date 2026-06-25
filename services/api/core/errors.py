@@ -110,6 +110,19 @@ class ForbiddenError(VedaError):
         )
 
 
+class RateLimitError(VedaError):
+    """Rate limit exceeded (HTTP 429)."""
+
+    def __init__(self, limit: int, window: str, retry_after: int = 60):
+        super().__init__(
+            error="RateLimitExceeded",
+            code="RATE_LIMIT_EXCEEDED",
+            message=f"Rate limit exceeded: {limit} requests per {window}. Retry after {retry_after}s.",
+            status_code=429,
+            details={"limit": limit, "window": window, "retry_after": retry_after},
+        )
+
+
 class CanonicalViolationError(VedaError):
     """Attempt to modify canonical (read-only) data (HTTP 403)."""
 

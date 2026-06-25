@@ -32,6 +32,8 @@ from core.middleware import (
     RequestLoggingMiddleware,
     ErrorHandlerMiddleware,
 )
+from core.rate_limit import RateLimitMiddleware
+from core.security import SecurityHeadersMiddleware, RequestGuardMiddleware
 from routers.health import router as health_router
 from routers.scriptures import router as scripture_router, verse_router
 from routers.graph import router as graph_router
@@ -173,7 +175,10 @@ app.add_middleware(
 )
 
 app.add_middleware(ErrorHandlerMiddleware)
+app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestGuardMiddleware)
 app.add_middleware(CorrelationIdMiddleware)
 
 # --- Routers ---

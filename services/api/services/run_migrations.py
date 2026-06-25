@@ -60,7 +60,7 @@ async def apply_migration(filepath: Path):
     filename = filepath.name
 
     if await is_applied(filename):
-        logger.info("  ⏭️  %s — already applied, skipping", filename)
+        logger.info("  [SKIP] %s — already applied", filename)
         return False
 
     logger.info("  Applying %s...", filename)
@@ -73,7 +73,7 @@ async def apply_migration(filepath: Path):
         "INSERT INTO _veda_migrations (filename) VALUES ($1) ON CONFLICT DO NOTHING",
         filename,
     )
-    logger.info("  ✅  %s — applied successfully", filename)
+    logger.info("  [OK] %s applied successfully", filename)
     return True
 
 
@@ -167,9 +167,9 @@ async def main():
 
         logger.info("=" * 60)
         if applied:
-            logger.info("✅  %d migration(s) applied", applied)
+            logger.info("[OK] %d migration(s) applied", applied)
         else:
-            logger.info("✅  All migrations already up to date")
+            logger.info("[OK] All migrations already up to date")
         logger.info("   Public tables: %d", table_count or 0)
         logger.info("=" * 60)
 

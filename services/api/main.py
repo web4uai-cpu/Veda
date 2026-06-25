@@ -96,40 +96,40 @@ async def lifespan(app: FastAPI):
     # PostgreSQL
     try:
         await init_postgres()
-        logger.info("✅  PostgreSQL connected")
+        logger.info("[OK] PostgreSQL connected")
     except Exception as e:
-        logger.warning("⚠️  PostgreSQL not available: %s", e)
+        logger.warning("[SKIP] PostgreSQL not available: %s", e)
 
     # Neo4j
     try:
         await init_neo4j()
-        logger.info("✅  Neo4j connected")
+        logger.info("[OK] Neo4j connected")
     except Exception as e:
-        logger.warning("⚠️  Neo4j not available: %s", e)
+        logger.warning("[SKIP] Neo4j not available: %s", e)
 
     # Redis
     try:
         await init_redis()
-        logger.info("✅  Redis connected")
+        logger.info("[OK] Redis connected")
     except Exception as e:
-        logger.warning("⚠️  Redis not available: %s", e)
+        logger.warning("[SKIP] Redis not available: %s", e)
 
     # Qdrant
     try:
         await init_qdrant()
-        logger.info("✅  Qdrant connected")
+        logger.info("[OK] Qdrant connected")
     except Exception as e:
-        logger.warning("⚠️  Qdrant not available: %s", e)
+        logger.warning("[SKIP] Qdrant not available: %s", e)
 
     # OpenSearch
     try:
         await init_opensearch()
-        logger.info("✅  OpenSearch connected")
+        logger.info("[OK] OpenSearch connected")
     except Exception as e:
-        logger.warning("⚠️  OpenSearch not available: %s", e)
+        logger.warning("[SKIP] OpenSearch not available: %s", e)
 
-    logger.info("🚀  VEDA API ready at http://localhost:8000")
-    logger.info("📖  Docs at http://localhost:8000/docs")
+    logger.info("VEDA API ready at http://localhost:8000")
+    logger.info("Docs at http://localhost:8000/docs")
 
     yield
 

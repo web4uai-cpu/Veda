@@ -319,7 +319,7 @@ async def _fulltext_candidates(request: SearchRequest) -> list[Candidate]:
         query_dsl = {
             "multi_match": {
                 "query": request.query,
-                "fields": ["content^2", "canonical_reference^3", "sanskrit", "transliteration"],
+                "fields": ["content^2", "canonical_reference^3", "sanskrit", "title"],
                 "type": "best_fields",
                 "fuzziness": "AUTO",
             }
@@ -340,7 +340,7 @@ async def _fulltext_candidates(request: SearchRequest) -> list[Candidate]:
         os_score = hit.get("_score", 1.0)
         candidates.append(
             Candidate(
-                source_id=source.get("verse_id", hit.get("_id", "")),
+                source_id=source.get("source_id", hit.get("_id", "")),
                 title=source.get("canonical_reference", ""),
                 content=source.get("content", ""),
                 score=round(min(os_score / 10.0, 0.95), 4),

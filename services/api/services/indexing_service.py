@@ -108,15 +108,14 @@ async def index_scripture_verses() -> dict[str, int]:
         for i, row in enumerate(batch):
             try:
                 await index_document("veda-scriptures", row["verse_id"], {
-                    "reference": row["canonical_reference"],
-                    "scripture_name": row["scripture_name"],
-                    "scripture_slug": row["scripture_slug"],
-                    "chapter": row["chapter_number"],
-                    "verse_number": row["verse_number"],
-                    "sanskrit": row["sanskrit"] or "",
-                    "translation": row["translation"] or "",
-                    "content": texts[i],
+                    "source_id": row["verse_id"],
+                    "scripture_id": row["scripture_id"],
+                    "canonical_reference": row["canonical_reference"],
                     "source_type": "SCRIPTURE",
+                    "language": "sanskrit",
+                    "title": row["canonical_reference"],
+                    "content": texts[i],
+                    "sanskrit": row["sanskrit"] or "",
                 })
                 opensearch_total += 1
             except Exception as e:

@@ -141,7 +141,7 @@ Every AI-generated answer MUST include:
 - Citation Agent has VETO AUTHORITY — can reject any response
 - Contradictory views are BOTH returned (no forced merge)
 
-## Current Phase: 8 Complete — Full Reasoning Stack
+## Current Phase: 9 Complete — Agent System
 
 ### Completed
 - Phase 0: Monorepo scaffold, web app (7 routes), FastAPI gateway, shared packages, Docker, CI/CD
@@ -154,10 +154,10 @@ Every AI-generated answer MUST include:
 - Phase 6: Hybrid Search — search_service.py (5 retrieval paths + RRF fusion), activated by Phase 5 indexes
 - Phase 7: Citation Engine — citation validation, confidence scoring, audit logging, upload citations
 - Phase 8: Reasoning Layer — rlm_service.py (OpenRouter GPT-5.5 + Claude fallback), POST /api/v1/ask, POST /api/v1/research, frontend Ask page with generated answers + citations (112 tests passing)
+- Phase 9: Agent System — 9 agents (5 domain + 4 infrastructure) with orchestrator, multi-agent parallel execution, citation VETO authority, graph enrichment, consensus scoring. POST /api/v1/agents/query, GET /api/v1/agents/list
 
 ### Next Up
 - Set OPENROUTER_API_KEY + OPENAI_API_KEY in production to enable LLM answers + vector indexing
-- Phase 9: Agent System (domain-specific agents: Veda, Upanishad, Purana, Vedanta, Sanskrit)
 - Phase 10: Production hardening (auth, rate limiting, monitoring, observability)
 
 See `docs/architecture/BACKEND_ARCHITECTURE.md` for the active backend audit and build order.

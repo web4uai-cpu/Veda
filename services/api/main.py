@@ -42,6 +42,7 @@ from routers.uploads import router as upload_router
 from routers.indexing import router as indexing_router
 from routers.ask import router as ask_router
 from routers.research import router as research_router
+from routers.agents import router as agents_router
 
 # =============================================================================
 # LOGGING
@@ -188,3 +189,4 @@ app.include_router(upload_router)
 app.include_router(indexing_router)
 app.include_router(ask_router)
 app.include_router(research_router)
+app.include_router(agents_router)

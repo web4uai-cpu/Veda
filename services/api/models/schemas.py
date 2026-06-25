@@ -492,3 +492,56 @@ class ResearchResponse(BaseModel):
     model_used: str = ""
     query_time_ms: float = 0.0
     warnings: list[str] = Field(default_factory=list)
+
+
+# =============================================================================
+# AGENT SYSTEM
+# =============================================================================
+
+
+class AgentRequest(BaseModel):
+    """Request routed through the agent orchestration system."""
+
+    query: str = Field(..., min_length=2, max_length=1000)
+    mode: SearchMode = Field("quick")
+    include_evidence: bool = True
+    include_uploads: bool = False
+
+
+class AgentResultResponse(BaseModel):
+    """Individual agent's contribution to a response."""
+
+    agent_name: str
+    answer: str
+    cited_references: list[str] = Field(default_factory=list)
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    model_used: str = ""
+    latency_ms: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
+    vetoed: bool = False
+    veto_reason: str = ""
+
+
+class AgentResponse(BaseModel):
+    """Orchestrated multi-agent response with citation validation."""
+
+    query: str
+    answer: str
+    agents_used: list[str] = Field(default_factory=list)
+    agent_results: list[AgentResultResponse] = Field(default_factory=list)
+    citations: list[CitationResponse] = Field(default_factory=list)
+    evidence: list[EvidencePacketResponse] = Field(default_factory=list)
+    graph_context: str = ""
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+    agent_agreement: float = Field(1.0, ge=0.0, le=1.0)
+    model_used: str = ""
+    query_time_ms: float = 0.0
+    warnings: list[str] = Field(default_factory=list)
+    vetoed: bool = False
+    veto_reason: str = ""
+
+
+class AgentListResponse(BaseModel):
+    """List of available agents."""
+
+    agents: list[dict[str, str]]

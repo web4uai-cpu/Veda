@@ -82,7 +82,7 @@ async def run_migrations(request: Request):
 
     migrations_dir = Path("/app/supabase/migrations")
     if not migrations_dir.exists():
-        migrations_dir = Path(__file__).resolve().parents[3] / "supabase" / "migrations"
+        migrations_dir = Path(__file__).resolve().parent.parent.parent.parent / "supabase" / "migrations"
     if not migrations_dir.exists():
         return {"status": "error", "message": f"Migrations dir not found"}
 
@@ -116,6 +116,17 @@ async def ingest_gita(request: Request):
         total = await fetch_and_ingest_verses(scripture_id, chapter_ids, client)
 
     return {"status": "ok", "scripture_id": scripture_id, "verses_ingested": total}
+
+
+@router.post("/api/v1/admin/index")
+async def index_corpus(request: Request):
+    """Index all verses into OpenSearch. Requires X-Admin-Key header."""
+    from core.auth import require_admin
+    await require_admin(request)
+
+    from services.indexing_service import index_all
+    result = await index_all()
+    return {"status": "ok", **result}
 
 
 @router.get("/")

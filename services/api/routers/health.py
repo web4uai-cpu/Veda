@@ -75,9 +75,28 @@ async def run_migrations(request: Request):
     from core.auth import require_admin
     await require_admin(request)
 
-    from services.run_migrations import main as do_migrate
-    await do_migrate()
-    return {"status": "ok", "message": "Migrations applied"}
+    from services.run_migrations import ensure_migration_tracking, apply_migration
+    from db import postgres
+    from pathlib import Path
+    import os
+
+    migrations_dir = Path("/app/supabase/migrations")
+    if not migrations_dir.exists():
+        migrations_dir = Path(__file__).resolve().parents[3] / "supabase" / "migrations"
+    if not migrations_dir.exists():
+        return {"status": "error", "message": f"Migrations dir not found"}
+
+    await ensure_migration_tracking()
+    migration_files = sorted(migrations_dir.glob("*.sql"))
+    applied = 0
+    for filepath in migration_files:
+        if await apply_migration(filepath):
+            applied += 1
+
+    table_count = await postgres.fetchval(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"
+    )
+    return {"status": "ok", "applied": applied, "tables": table_count}
 
 
 @router.post("/api/v1/admin/ingest-gita")
@@ -86,9 +105,17 @@ async def ingest_gita(request: Request):
     from core.auth import require_admin
     await require_admin(request)
 
-    from services.ingest_gita import main as do_ingest
-    await do_ingest()
-    return {"status": "ok", "message": "Gita ingestion complete"}
+    from services.ingest_gita import create_scripture, create_book, create_chapters, fetch_and_ingest_verses
+    import httpx
+
+    scripture_id = await create_scripture()
+    book_id = await create_book(scripture_id)
+    chapter_ids = await create_chapters(scripture_id, book_id)
+
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
+        total = await fetch_and_ingest_verses(scripture_id, chapter_ids, client)
+
+    return {"status": "ok", "scripture_id": scripture_id, "verses_ingested": total}
 
 
 @router.get("/")

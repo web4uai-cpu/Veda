@@ -34,13 +34,4 @@ CREATE INDEX IF NOT EXISTS idx_upload_chunks_content_trgm ON upload_chunks USING
 -- --- RLS for upload_chunks ---
 ALTER TABLE upload_chunks ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can read own upload chunks"
-    ON upload_chunks FOR SELECT
-    USING (
-        upload_id IN (
-            SELECT id FROM user_uploads
-            WHERE user_id IN (
-                SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()
-            )
-        )
-    );
+-- Authorization enforced at API layer (Firebase Auth + FastAPI dependencies)

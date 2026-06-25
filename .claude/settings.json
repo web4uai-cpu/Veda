@@ -1,14 +1,53 @@
 {
-  "skills": [
-    "skills/frontend.md",
-    "skills/backend.md",
-    "skills/database.md",
-    "skills/knowledge-graph.md",
-    "skills/design-system.md",
-    "skills/scripture-data.md",
-    "skills/testing.md"
-  ],
-  "memory": "memory.md",
   "project": "VEDA — Knowledge Operating System for Sanatan Dharma",
-  "phase": "1"
+  "phase": "3",
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "PowerShell(git *)",
+      "PowerShell(pnpm *)",
+      "PowerShell(npm *)",
+      "PowerShell(npx *)",
+      "PowerShell(turbo *)",
+      "PowerShell(python *)",
+      "PowerShell(pip *)",
+      "PowerShell(docker *)",
+      "PowerShell(docker-compose *)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "pre-commit": ".claude/hooks/pre-commit.sh",
+    "lint-on-save": ".claude/hooks/lint-on-save.sh"
+  },
+  "agents": {
+    "code-reviewer": ".claude/agents/code-reviewer.md",
+    "debugger": ".claude/agents/debugger.md",
+    "test-writer": ".claude/agents/test-writer.md",
+    "refactor": ".claude/agents/refactor.md",
+    "doc-writer": ".claude/agents/doc-writer.md",
+    "security": ".claude/agents/security.md"
+  },
+  "commands": {
+    "fix-issue": ".claude/commands/fix-issue.md",
+    "deploy": ".claude/commands/deploy.md",
+    "pr-review": ".claude/commands/pr-review.md"
+  },
+  "rules": [
+    ".claude/rules/frontend.md",
+    ".claude/rules/backend.md",
+    ".claude/rules/database.md",
+    ".claude/rules/api.md"
+  ],
+  "skills": [
+    ".claude/skills/frontend-design.md",
+    ".claude/skills/knowledge-graph.md",
+    ".claude/skills/scripture-data.md",
+    ".claude/skills/testing.md",
+    ".claude/skills/skill.md"
+  ]
 }

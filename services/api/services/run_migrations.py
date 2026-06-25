@@ -2,7 +2,7 @@
 VEDA — Database Migration Runner
 ====================================
 Applies SQL migrations to the PostgreSQL database.
-Reads migration files from supabase/migrations/ and applies them
+Reads migration files from the migrations directory and applies them
 in order, skipping any that have already been applied.
 
 Usage:
@@ -66,7 +66,7 @@ async def apply_migration(filepath: Path):
     logger.info("  Applying %s...", filename)
 
     sql = filepath.read_text(encoding="utf-8")
-    await _apply_without_auth_policies(sql)
+    await _apply_statements(sql)
 
     # Record the migration
     await execute(
@@ -77,31 +77,14 @@ async def apply_migration(filepath: Path):
     return True
 
 
-async def _apply_without_auth_policies(sql: str):
-    """
-    Apply migration SQL but skip statements that reference auth.uid().
-    Splits SQL safely enough for PostgreSQL dollar-quoted functions.
-    """
+async def _apply_statements(sql: str):
+    """Apply migration SQL, splitting on statement boundaries."""
     statements = _split_sql_statements(sql)
-    skip_count = 0
 
     for stmt in statements:
         stmt = stmt.strip()
         if not stmt:
             continue
-
-        # Skip RLS policies referencing Supabase auth
-        if "auth.uid()" in stmt:
-            skip_count += 1
-            continue
-
-        # For CREATE TABLE with auth.users FK, strip the FK reference
-        if "auth.users" in stmt:
-            import re
-            stmt = re.sub(r'\s*REFERENCES\s+auth\.users\s*\([^)]*\)', '', stmt)
-            if "auth." in stmt:
-                skip_count += 1
-                continue
 
         try:
             await execute(stmt)
@@ -109,9 +92,6 @@ async def _apply_without_auth_policies(sql: str):
             if "already exists" in str(e).lower():
                 continue
             logger.warning("    Skipping statement: %s", str(e)[:100])
-
-    if skip_count:
-        logger.info("    Skipped %d auth-dependent statements", skip_count)
 
 
 def _split_sql_statements(sql: str) -> list[str]:

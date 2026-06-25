@@ -84,16 +84,4 @@ ALTER TABLE evidence_packets ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON evidence_packets FOR SELECT USING (true);
 
 ALTER TABLE search_queries ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own search history" ON search_queries FOR SELECT
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
-
 ALTER TABLE citation_audit_logs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins read citation audits" ON citation_audit_logs FOR SELECT
-    USING (
-        EXISTS (
-            SELECT 1
-            FROM user_profiles
-            WHERE supabase_uid = auth.uid()
-              AND role IN ('admin', 'moderator')
-        )
-    );

@@ -1,11 +1,9 @@
 """
 VEDA — PostgreSQL Database Connection
 ========================================
-Async connection pool for Supabase/PostgreSQL.
+Async connection pool for PostgreSQL (Railway).
 Uses asyncpg for high-performance async queries.
-
-For Phase 2 (MVP), we connect directly via asyncpg.
-In production, use Supabase client for auth-aware queries.
+Auth is handled at the API layer via Firebase Auth.
 """
 
 from __future__ import annotations

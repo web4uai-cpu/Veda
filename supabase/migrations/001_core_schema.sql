@@ -10,11 +10,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";  -- Trigram search for fuzzy matching
 
 -- =============================================================================
--- USER PROFILES (extends Supabase auth.users)
+-- USER PROFILES (linked to Firebase Auth)
 -- =============================================================================
 CREATE TABLE user_profiles (
     id TEXT PRIMARY KEY,                     -- usr_ULID
-    supabase_uid UUID NOT NULL UNIQUE,       -- References auth.users(id)
+    firebase_uid TEXT NOT NULL UNIQUE,       -- Firebase Auth UID
     email TEXT NOT NULL,
     username TEXT UNIQUE NOT NULL,
     display_name TEXT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE user_profiles (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_user_profiles_supabase_uid ON user_profiles(supabase_uid);
+CREATE INDEX idx_user_profiles_firebase_uid ON user_profiles(firebase_uid);
 CREATE INDEX idx_user_profiles_username ON user_profiles(username);
 
 -- =============================================================================
@@ -292,32 +292,14 @@ CREATE POLICY "Public read access" ON verse_contents FOR SELECT USING (true);
 ALTER TABLE concepts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Public read access" ON concepts FOR SELECT USING (true);
 
--- User data: users can only access their own
+-- User data: authorization enforced at API layer (Firebase Auth + FastAPI dependencies)
+-- RLS is enabled but policies are permissive — backend filters by user_id after token verification
 ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users see own profile" ON user_profiles FOR SELECT
-    USING (supabase_uid = auth.uid());
-CREATE POLICY "Users update own profile" ON user_profiles FOR UPDATE
-    USING (supabase_uid = auth.uid());
-
 ALTER TABLE notes ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own notes" ON notes FOR ALL
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
-
 ALTER TABLE bookmarks ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own bookmarks" ON bookmarks FOR ALL
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
-
 ALTER TABLE collections ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own collections" ON collections FOR ALL
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
-
 ALTER TABLE user_uploads ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own uploads" ON user_uploads FOR ALL
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
-
 ALTER TABLE research_reports ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users manage own reports" ON research_reports FOR ALL
-    USING (user_id IN (SELECT id FROM user_profiles WHERE supabase_uid = auth.uid()));
 
 -- =============================================================================
 -- UPDATED_AT TRIGGER

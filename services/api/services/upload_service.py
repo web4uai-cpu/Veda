@@ -13,7 +13,7 @@ from fastapi import UploadFile
 
 from core.ulid import generate_id
 from db.postgres import execute, fetch, fetchrow, fetchval
-from db.supabase_storage import upload_file, download_file, delete_file
+from db.firebase_storage import upload_file, download_file, delete_file
 from services.pdf_service import extract_text_from_pdf, chunk_text
 
 logger = logging.getLogger("veda.services.upload")

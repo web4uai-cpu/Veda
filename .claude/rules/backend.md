@@ -1,4 +1,4 @@
-# Skill: Backend Development
+# Backend Rules
 
 ## Framework
 - **FastAPI** (Python 3.12+)
@@ -12,7 +12,7 @@ services/api/
 ├── config.py            # Settings from environment
 ├── requirements.txt     # Python dependencies
 ├── Dockerfile           # Container image
-├── routers/             # Route modules (Phase 2+)
+├── routers/             # Route modules
 │   ├── health.py
 │   ├── search.py
 │   ├── chat.py
@@ -62,7 +62,6 @@ router = APIRouter(prefix="/api/v1/scriptures", tags=["scriptures"])
 
 @router.get("/{scripture_id}")
 async def get_scripture(scripture_id: str):
-    # Always validate ID prefix
     if not scripture_id.startswith("scp_"):
         raise HTTPException(status_code=400, detail="Invalid scripture ID format")
     ...
@@ -82,7 +81,6 @@ llm_client = AsyncOpenAI(
     base_url=settings.openrouter_base_url,
 )
 
-# Primary model
 response = await llm_client.chat.completions.create(
     model=settings.llm_primary_model,  # "openai/gpt-5.5"
     messages=[...],
@@ -103,10 +101,9 @@ except Exception:
 
 ## Database Connection Patterns
 
-### PostgreSQL (via Supabase)
+### PostgreSQL (via Railway)
 ```python
-from supabase import create_client
-supabase = create_client(settings.supabase_url, settings.supabase_service_key)
+from db.postgres import execute, fetch, fetchrow, fetchval
 ```
 
 ### Neo4j

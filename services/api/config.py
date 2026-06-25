@@ -25,12 +25,13 @@ class Settings(BaseSettings):
     app_version: str = "0.2.0"
     debug: bool = False
 
-    # --- Database (Supabase / PostgreSQL) ---
+    # --- Database (PostgreSQL via Railway) ---
     database_url: str = "postgresql://veda:vedadev2026@localhost:5432/veda"
 
-    # --- Supabase ---
-    supabase_url: str = "http://localhost:54321"
-    supabase_service_key: str = ""
+    # --- Firebase ---
+    firebase_service_account_json: str = ""
+    firebase_service_account_path: str = ""
+    firebase_storage_bucket: str = "veda-9a7d6.firebasestorage.app"
 
     # --- Neo4j ---
     neo4j_uri: str = "bolt://localhost:7687"

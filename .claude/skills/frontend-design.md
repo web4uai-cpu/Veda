@@ -1,11 +1,15 @@
-# Skill: Design System
+# Frontend Design Skill
 
 ## Philosophy
-
 VEDA should feel like: **a living library of knowledge.**
 NOT an AI chatbot, NOT a social network, NOT a productivity app.
-
 The user should feel: Curiosity, Calmness, Trust, Discovery, Intellectual depth.
+
+## Visual Language
+- **Warmth over coldness** — Saffron accents bring life to scholarly content
+- **Depth without drama** — Subtle shadows, layered cards, no harsh edges
+- **Respect for text** — Sanskrit content gets visual priority and proper spacing
+- **Quiet navigation** — Indigo-dominant nav that doesn't compete with content
 
 ## Color Palette
 
@@ -57,25 +61,30 @@ The user should feel: Curiosity, Calmness, Trust, Discovery, Intellectual depth.
 ## Spacing System (4px base)
 `4 · 8 · 12 · 16 · 24 · 32 · 48 · 64` — ONLY use scale values.
 
-## Component Library
+## Component Patterns
 
-### Knowledge Card (most important component)
-```html
-<div class="knowledge-card">
-  Title → Summary → Source → Related Concepts → Action
-</div>
+### Knowledge Card
+```
+rounded-[20px] | bg-white dark:bg-gray-900 | shadow-sm
+padding: 24px | border: 1px solid rgba(36,59,99,0.08)
 ```
 States: Default, Expanded, Saved, Referenced
 
-### Verse Card
-```html
-<div class="verse-block">
-  <p class="verse-sanskrit">आत्मा</p>
-  <p class="verse-transliteration">Ātman</p>
-  <p class="verse-translation">Self</p>
-</div>
+### Verse Block
 ```
-NEVER mix Sanskrit/transliteration/translation into one line.
+bg-[#F8F5EF] dark:bg-gray-800 | rounded-[16px] | p-6
+Sanskrit: Noto Sans Devanagari, text-lg, text-[#243B63]
+IAST: Inter italic, text-sm, text-gray-600
+English: Inter, text-base, text-gray-800
+```
+
+### Action Buttons
+```
+Primary: bg-[#C97A24] text-white rounded-[12px]
+Secondary: border-[#243B63] text-[#243B63] rounded-[12px]
+Ghost: text-[#243B63] hover:bg-[#243B63]/5
+Danger: bg-[#B91C1C] text-white rounded-[12px]
+```
 
 ### Citation Badge
 ```html
@@ -84,18 +93,11 @@ NEVER mix Sanskrit/transliteration/translation into one line.
 <span class="confidence-low">E · 0.31</span>     <!-- Red -->
 ```
 
-### Buttons
-Variants: Primary (saffron), Secondary (indigo), Ghost, Danger
-
-## Icons
-**Lucide Icons** for standard UI. Custom icons needed for: Scripture, Verse, Knowledge, Research, Graph, Commentary.
-
-## Layout
-- Desktop: 12-column grid, 280px sidebar
-- Tablet: 8-column grid
-- Mobile: 4-column grid, bottom navigation (56px)
-- Max content width: 1400px
-- Header height: 64px
+### Navigation
+```
+Sidebar: bg-[#243B63] text-white
+Active item: bg-white/10 border-l-2 border-[#C97A24]
+```
 
 ## Shadows
 **Subtle ONLY.** No dramatic elevation.
@@ -106,6 +108,21 @@ Variants: Primary (saffron), Secondary (indigo), Ghost, Danger
 ## Corner Radius
 sm=8px, md=12px, lg=16px, **card=20px**
 
+## Icons
+**Lucide Icons** for standard UI. Custom icons needed for: Scripture, Verse, Knowledge, Research, Graph, Commentary.
+
+## Layout
+- Desktop: 12-column grid, 280px sidebar, max content width 1400px
+- Tablet: 8-column grid
+- Mobile: 4-column grid, bottom navigation (56px)
+- Header height: 64px
+
+## Animation Guidelines
+- Page transitions: subtle fade (200ms)
+- Card hover: slight lift + shadow increase (150ms ease)
+- Loading states: gentle pulse, saffron accent
+- No flashy animations — maintain scholarly tone
+
 ## Graph Visualization
 | Node Type | Shape | Color |
 |---|---|---|
@@ -114,4 +131,5 @@ sm=8px, md=12px, lg=16px, **card=20px**
 | Verse | Pill | Light Indigo |
 | Commentary | Hexagon | Light Saffron |
 | School | Diamond | Neutral |
-| Node size: based on importance/references/popularity |
+
+Node size: based on importance/references/popularity.

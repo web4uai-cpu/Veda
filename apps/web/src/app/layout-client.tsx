@@ -4,6 +4,8 @@ import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { SplashScreen } from '@/components/splash/SplashScreen';
+import { AuthProvider } from '@/components/providers/AuthProvider';
+import { UserMenu } from '@/components/auth/UserMenu';
 
 const NAV_ITEMS = [
   { icon: '🔍', label: 'Explore', href: '/explore' },
@@ -27,7 +29,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <>
+    <AuthProvider>
       {/* Splash Screen */}
       {!splashDone && (
         <SplashScreen onComplete={() => setSplashDone(true)} duration={3500} />
@@ -68,7 +70,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
           </div>
 
           {/* Nav Items */}
-          <nav className="flex-1 space-y-1 px-3 py-4">
+          <nav className="flex-1 space-y-1 px-3 py-4" role="navigation">
             {NAV_ITEMS.map((item, i) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
@@ -110,6 +112,11 @@ export function LayoutClient({ children }: { children: ReactNode }) {
               );
             })}
           </nav>
+
+          {/* User Menu */}
+          <div className="border-t border-[hsl(var(--border))] px-3 py-3">
+            <UserMenu />
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -133,6 +140,9 @@ export function LayoutClient({ children }: { children: ReactNode }) {
                 <span className="sanskrit text-base font-bold text-white">व</span>
               </motion.div>
               <span className="scripture-title text-lg font-bold">VEDA</span>
+            </div>
+            <div className="ml-auto">
+              <UserMenu compact />
             </div>
           </header>
 
@@ -188,6 +198,6 @@ export function LayoutClient({ children }: { children: ReactNode }) {
           );
         })}
       </nav>
-    </>
+    </AuthProvider>
   );
 }

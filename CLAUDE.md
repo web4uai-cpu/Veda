@@ -31,7 +31,8 @@ Knowledge Graph (Neo4j) → Retrieval (Qdrant + OpenSearch) → Citation (Postgr
 | Styling | Tailwind CSS | 3.4+ |
 | State | Zustand (client), TanStack Query (server) | 5+, 5+ |
 | Backend | FastAPI (Python) | 0.115+ |
-| Auth + DB + Storage | Supabase | latest |
+| Auth + Storage | Firebase | latest |
+| Database | PostgreSQL (Railway) | 16 |
 | Knowledge Graph | Neo4j Community | 5 |
 | Vector Search | Qdrant | latest |
 | Full-Text Search | OpenSearch | 2 |

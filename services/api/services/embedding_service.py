@@ -75,7 +75,9 @@ async def generate_embeddings(
                 all_embeddings[start + item.index] = item.embedding
         except Exception as e:
             logger.error("Embedding batch %d-%d failed: %s", start, start + len(batch), e)
-            raise
+            if "insufficient_quota" in str(e):
+                logger.warning("OpenAI quota exhausted — skipping remaining embeddings")
+                break
 
     logger.info("Generated %d embeddings (%d dimensions)", len(texts), settings.embedding_dimensions)
     return all_embeddings

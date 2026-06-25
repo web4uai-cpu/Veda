@@ -38,7 +38,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("veda.ingest.gita")
 
-API_BASE = "https://bhagavadgitaapi.in"
+API_BASE = "https://vedicscriptures.github.io"
 
 # Chapter metadata (from tools/seed_gita.py — Sanskrit titles and summaries)
 CHAPTER_META = {
@@ -169,25 +169,6 @@ async def fetch_and_ingest_verses(
             total_inserted += existing_count
             continue
 
-        # Fetch from API
-        try:
-            response = await client.get(f"{API_BASE}/slok/{ch_num}")
-            if response.status_code != 200:
-                logger.warning("  Ch %2d: API returned %d, skipping", ch_num, response.status_code)
-                continue
-
-            data = response.json()
-        except Exception as e:
-            logger.error("  Ch %2d: API error: %s", ch_num, e)
-            continue
-
-        # Handle different API response formats
-        if isinstance(data, dict):
-            verse_count = data.get("verses_count", len(CHAPTER_META.get(ch_num, {}).get("verses", 0).__class__.__mro__))
-            # The API returns individual verses at /slok/{chapter}/{verse}
-            # Let's fetch each verse individually
-            verse_meta_count = CHAPTER_META[ch_num].get("verses_count", 0)
-
         # Fetch individual verses
         chapter_verse_count = 0
         max_verses = 100  # Safety limit
@@ -224,7 +205,7 @@ async def fetch_and_ingest_verses(
                 VALUES ($1, $2, $3, $4, $5, $6, $7)
                 """,
                 verse_id, scripture_id, None, chapter_id, v_num, canonical_ref,
-                json.dumps({"source": "bhagavadgitaapi.in"}),
+                json.dumps({"source": "vedicscriptures.github.io"}),
             )
 
             # Insert content variants
@@ -253,10 +234,9 @@ async def fetch_and_ingest_verses(
                 )
 
             # Word meanings
-            word_meaning = verse_data.get("tej", {}).get("ht", "") or verse_data.get("spiess", {}).get("et", "")
+            word_meaning = verse_data.get("tej", {}).get("ht", "")
             if not word_meaning:
-                # Try other translation fields
-                for author_key in ["chinmpiess", "purohit", "san", "adi", "gambir", "sivananda"]:
+                for author_key in ["chinmay", "purohit", "san", "adi", "gambir", "siva"]:
                     author_data = verse_data.get(author_key, {})
                     if isinstance(author_data, dict):
                         word_meaning = author_data.get("et", "")
@@ -266,9 +246,9 @@ async def fetch_and_ingest_verses(
             # English translations (try multiple sources)
             translations_added = 0
             for author_key, author_name in [
-                ("sivananda", "Swami Sivananda"),
+                ("siva", "Swami Sivananda"),
                 ("gambir", "Swami Gambirananda"),
-                ("chinmpiess", "Chinmaya Mission"),
+                ("chinmay", "Swami Chinmayananda"),
                 ("purohit", "Shri Purohit Swami"),
                 ("san", "Dr. S. Sankaranarayan"),
                 ("adi", "Swami Adidevananda"),
@@ -325,11 +305,11 @@ async def main():
         chapter_ids = await create_chapters(scripture_id, book_id)
 
         # Step 4: Fetch and ingest all verses
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as client:
             total = await fetch_and_ingest_verses(scripture_id, chapter_ids, client)
 
         logger.info("=" * 60)
-        logger.info("✅  Ingestion complete!")
+        logger.info("[OK] Ingestion complete!")
         logger.info("   Scripture: Bhagavad Gita (%s)", scripture_id)
         logger.info("   Chapters: 18")
         logger.info("   Verses ingested: %d", total)

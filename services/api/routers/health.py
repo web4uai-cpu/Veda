@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from db import postgres, neo4j_client, redis_client
 from db import qdrant_client, opensearch_client
@@ -67,6 +67,28 @@ async def health_metrics():
     """Internal metrics snapshot — request counts, latencies, agent usage."""
     from core.observability import get_metrics_snapshot
     return get_metrics_snapshot()
+
+
+@router.post("/api/v1/admin/migrate")
+async def run_migrations(request: Request):
+    """Run database migrations. Requires X-Admin-Key header."""
+    from core.auth import require_admin
+    await require_admin(request)
+
+    from services.run_migrations import main as do_migrate
+    await do_migrate()
+    return {"status": "ok", "message": "Migrations applied"}
+
+
+@router.post("/api/v1/admin/ingest-gita")
+async def ingest_gita(request: Request):
+    """Ingest Bhagavad Gita from API. Requires X-Admin-Key header."""
+    from core.auth import require_admin
+    await require_admin(request)
+
+    from services.ingest_gita import main as do_ingest
+    await do_ingest()
+    return {"status": "ok", "message": "Gita ingestion complete"}
 
 
 @router.get("/")

@@ -97,6 +97,12 @@ async def lifespan(app: FastAPI):
     try:
         await init_postgres()
         logger.info("[OK] PostgreSQL connected")
+        # Auto-run migrations on startup
+        try:
+            from services.run_migrations import main as run_migrations
+            await run_migrations()
+        except Exception as mig_err:
+            logger.warning("[SKIP] Auto-migration failed: %s", mig_err)
     except Exception as e:
         logger.warning("[SKIP] PostgreSQL not available: %s", e)
 

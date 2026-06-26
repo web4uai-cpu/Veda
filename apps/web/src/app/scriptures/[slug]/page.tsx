@@ -40,7 +40,13 @@ export default function ScriptureDetailPage() {
   if (status === 'loading') {
     return (
       <main className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
-        <div className="h-40 animate-pulse rounded-2xl border border-[hsl(var(--border))] glass" />
+        <div className="mb-4 h-4 w-32 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
+        <div className="mb-8 h-40 animate-pulse rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10" />
+        <div className="grid gap-4 md:grid-cols-2">
+          {Array.from({ length: 4 }, (_, i) => (
+            <div key={i} className="h-28 animate-pulse rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10" style={{ animationDelay: `${i * 100}ms` }} />
+          ))}
+        </div>
       </main>
     );
   }
@@ -52,6 +58,12 @@ export default function ScriptureDetailPage() {
         <p className="text-[hsl(var(--muted-foreground))]">
           Start the API and ingest the canonical corpus to read this scripture.
         </p>
+        <a
+          href="/scriptures"
+          className="mt-4 inline-block text-sm text-[hsl(var(--primary))] hover:underline"
+        >
+          Back to all scriptures
+        </a>
       </main>
     );
   }
@@ -59,6 +71,11 @@ export default function ScriptureDetailPage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
       <ScrollReveal animation="fade-up">
+        <nav className="mb-4 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+          <a href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</a>
+          <span>/</span>
+          <span className="text-[hsl(var(--foreground))]">{scripture.name}</span>
+        </nav>
         <section className="mb-8 rounded-2xl border border-[hsl(var(--border))] p-6 glass">
           {scripture.sanskrit_name && (
             <p className="sanskrit mb-2 text-xl text-[hsl(var(--muted-foreground))]">
@@ -68,16 +85,26 @@ export default function ScriptureDetailPage() {
           <h1 className="scripture-title text-4xl font-bold text-[hsl(var(--foreground))]">
             {scripture.name}
           </h1>
-          <p className="mt-3 max-w-3xl leading-relaxed text-[hsl(var(--muted-foreground))]">
-            {scripture.description}
-          </p>
+          {scripture.description && (
+            <p className="mt-3 max-w-3xl leading-relaxed text-[hsl(var(--muted-foreground))]">
+              {scripture.description}
+            </p>
+          )}
           <div className="mt-5 flex flex-wrap gap-3 text-sm text-[hsl(var(--muted-foreground))]">
-            <span>{scripture.chapter_count} chapters</span>
-            <span>{scripture.verse_count} verses</span>
-            <span>{scripture.category}</span>
+            {scripture.chapter_count > 0 && <span>{scripture.chapter_count} chapters</span>}
+            {scripture.verse_count > 0 && <span>{scripture.verse_count} verses</span>}
+            <span className="capitalize">{scripture.category}</span>
           </div>
         </section>
       </ScrollReveal>
+
+      {chapters.length === 0 && (
+        <div className="rounded-xl border border-dashed border-[hsl(var(--border))] py-12 text-center">
+          <p className="text-[hsl(var(--muted-foreground))]">
+            Chapters for this scripture have not been ingested yet.
+          </p>
+        </div>
+      )}
 
       <ScrollReveal stagger staggerDelay={0.06} className="grid gap-4 md:grid-cols-2">
         {chapters.map((chapter) => (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem, TextReveal } from '@/components/animations';
 import { api, type Scripture } from '@/lib/api';
@@ -33,8 +33,6 @@ function getStyle(key: string) {
   return CATEGORY_CONFIG[key] ?? DEFAULT_STYLE;
 }
 
-const CATEGORY_ORDER = ['veda', 'upanishad', 'gita', 'ramayana', 'mahabharata', 'purana', 'shastra', 'commentary'];
-
 // Merge ramayana + mahabharata into a single "Itihasa" display group
 const DISPLAY_GROUPS: { key: string; label: string; categories: string[] }[] = [
   { key: 'veda',      label: 'Vedas (Shruti)',       categories: ['veda'] },
@@ -43,6 +41,11 @@ const DISPLAY_GROUPS: { key: string; label: string; categories: string[] }[] = [
   { key: 'purana',    label: 'Puranas (Smriti)',      categories: ['purana'] },
   { key: 'shastra',   label: 'Shastras (Treatises)',  categories: ['shastra'] },
   { key: 'commentary', label: 'Commentaries',         categories: ['commentary'] },
+];
+
+const FILTER_TABS = [
+  { key: 'all', label: 'All' },
+  ...DISPLAY_GROUPS.map((dg) => ({ key: dg.key, label: dg.label })),
 ];
 
 // ---------------------------------------------------------------------------
@@ -55,7 +58,7 @@ interface DisplayGroup {
   items: Scripture[];
 }
 
-function buildDisplayGroups(scriptures: Scripture[]): DisplayGroup[] {
+function buildDisplayGroups(scriptures: Scripture[], activeFilter: string): DisplayGroup[] {
   const byCat = new Map<string, Scripture[]>();
   for (const s of scriptures) {
     const list = byCat.get(s.category);
@@ -63,7 +66,11 @@ function buildDisplayGroups(scriptures: Scripture[]): DisplayGroup[] {
     else byCat.set(s.category, [s]);
   }
 
-  return DISPLAY_GROUPS
+  const groups = activeFilter === 'all'
+    ? DISPLAY_GROUPS
+    : DISPLAY_GROUPS.filter((dg) => dg.key === activeFilter);
+
+  return groups
     .map((dg) => ({
       key: dg.key,
       label: dg.label,
@@ -98,32 +105,75 @@ function mergeWithFallback(apiData: Scripture[]): Scripture[] {
 }
 
 // ---------------------------------------------------------------------------
+// Skeleton Loader
+// ---------------------------------------------------------------------------
+
+function ScripturesSkeleton() {
+  return (
+    <div className="space-y-8">
+      {[1, 2, 3].map((section) => (
+        <div key={section}>
+          <div className="mb-3 h-4 w-40 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: section === 1 ? 4 : 6 }, (_, i) => (
+              <div
+                key={i}
+                className="h-20 animate-pulse rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/20"
+                style={{ animationDelay: `${i * 80}ms` }}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
 export default function ScripturesPage() {
-  const [scriptures, setScriptures] = useState<Scripture[]>(FALLBACK_SCRIPTURES);
+  const [allScriptures, setAllScriptures] = useState<Scripture[]>(FALLBACK_SCRIPTURES);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
     api
       .getScriptures(undefined, 1, 200)
       .then((res) => {
-        setScriptures(mergeWithFallback(res.scriptures));
+        setAllScriptures(mergeWithFallback(res.scriptures));
         setLoading(false);
       })
       .catch(() => {
-        setScriptures(FALLBACK_SCRIPTURES);
+        setAllScriptures(FALLBACK_SCRIPTURES);
         setLoading(false);
       });
   }, []);
 
-  const groups = buildDisplayGroups(scriptures);
+  const filtered = useMemo(() => {
+    if (!search.trim()) return allScriptures;
+    const q = search.toLowerCase();
+    return allScriptures.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.sanskrit_name && s.sanskrit_name.toLowerCase().includes(q)) ||
+        s.category.toLowerCase().includes(q),
+    );
+  }, [allScriptures, search]);
+
+  const groups = useMemo(
+    () => buildDisplayGroups(filtered, activeFilter),
+    [filtered, activeFilter],
+  );
+
+  const totalShown = groups.reduce((sum, g) => sum + g.items.length, 0);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 lg:px-8">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <ScrollReveal animation="fade-up">
           <h1 className="scripture-title mb-1 text-3xl font-bold text-[hsl(var(--foreground))]">
             <TextReveal text="Scriptures" />
@@ -131,13 +181,80 @@ export default function ScripturesPage() {
         </ScrollReveal>
         <ScrollReveal animation="fade-up" delay={0.15}>
           <p className="text-base text-[hsl(var(--muted-foreground))]">
-            {scriptures.length} sacred texts across {groups.length} traditions
+            {totalShown} sacred texts across {groups.length} traditions
           </p>
         </ScrollReveal>
       </div>
 
+      {/* Search & Filter Bar */}
+      <ScrollReveal animation="fade-up" delay={0.2}>
+        <div className="mb-6 space-y-3">
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(var(--muted-foreground))]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search scriptures by name or category..."
+              className="w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] py-2.5 pl-10 pr-4 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--primary))] focus:outline-none focus:ring-1 focus:ring-[hsl(var(--primary))]"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-1.5">
+            {FILTER_TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveFilter(tab.key)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+                  activeFilter === tab.key
+                    ? 'bg-[hsl(var(--primary))] text-white shadow-sm'
+                    : 'bg-[hsl(var(--muted))]/30 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]/60'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </ScrollReveal>
+
+      {/* Loading skeleton */}
+      {loading && <ScripturesSkeleton />}
+
+      {/* Empty state */}
+      {!loading && groups.length === 0 && (
+        <div className="py-16 text-center">
+          <p className="text-lg text-[hsl(var(--muted-foreground))]">
+            No scriptures match &ldquo;{search}&rdquo;
+          </p>
+          <button
+            onClick={() => { setSearch(''); setActiveFilter('all'); }}
+            className="mt-3 text-sm text-[hsl(var(--primary))] hover:underline"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
+
       {/* Category Sections */}
-      {groups.map((group, gi) => (
+      {!loading && groups.map((group, gi) => (
         <section key={group.key} className="mb-8">
           {/* Section header */}
           <ScrollReveal animation="slide-right" delay={gi * 0.06}>
@@ -173,11 +290,6 @@ export default function ScripturesPage() {
           </ScrollReveal>
         </section>
       ))}
-
-      {/* Loading overlay — only on initial render while API is fetching */}
-      {loading && (
-        <div className="pointer-events-none absolute inset-0" aria-hidden />
-      )}
     </div>
   );
 }

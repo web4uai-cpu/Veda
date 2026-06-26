@@ -12,6 +12,7 @@ export default function ChapterReaderPage() {
   const [scripture, setScripture] = useState<Scripture | null>(null);
   const [chapter, setChapter] = useState<Chapter | null>(null);
   const [verses, setVerses] = useState<Verse[]>([]);
+  const [totalChapters, setTotalChapters] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   useEffect(() => {
@@ -29,6 +30,7 @@ export default function ChapterReaderPage() {
           setScripture(scriptureResult);
           setChapter(chapterResult);
           setVerses(versesResult.verses);
+          setTotalChapters(scriptureResult.chapter_count);
           setStatus('ready');
         }
       } catch {
@@ -45,7 +47,19 @@ export default function ChapterReaderPage() {
   if (status === 'loading') {
     return (
       <main className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
-        <div className="h-56 animate-pulse rounded-2xl border border-[hsl(var(--border))] glass" />
+        <div className="mb-4 h-4 w-32 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
+        <div className="mb-2 h-5 w-48 animate-pulse rounded bg-[hsl(var(--muted))]/30" />
+        <div className="mb-8 h-10 w-80 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
+        <div className="space-y-6">
+          {Array.from({ length: 5 }, (_, i) => (
+            <div key={i} className="space-y-2 rounded-xl border border-[hsl(var(--border))] p-5" style={{ animationDelay: `${i * 100}ms` }}>
+              <div className="h-3 w-16 animate-pulse rounded bg-[hsl(var(--muted))]/30" />
+              <div className="h-6 w-full animate-pulse rounded bg-[hsl(var(--muted))]/20" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-[hsl(var(--muted))]/15" />
+              <div className="h-4 w-full animate-pulse rounded bg-[hsl(var(--muted))]/20" />
+            </div>
+          ))}
+        </div>
       </main>
     );
   }
@@ -57,20 +71,30 @@ export default function ChapterReaderPage() {
         <p className="text-[hsl(var(--muted-foreground))]">
           Start the API and ingest verses before opening this chapter.
         </p>
+        <a
+          href={`/scriptures/${slug}`}
+          className="mt-4 inline-block text-sm text-[hsl(var(--primary))] hover:underline"
+        >
+          Back to scripture
+        </a>
       </main>
     );
   }
+
+  const hasPrev = chapterNumber > 1;
+  const hasNext = chapterNumber < totalChapters;
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
       <ScrollReveal animation="fade-up">
         <header className="mb-8 border-b border-[hsl(var(--border))] pb-6">
-          <a
-            href={`/scriptures/${slug}`}
-            className="text-sm text-[hsl(var(--primary))] hover:underline"
-          >
-            {scripture.name}
-          </a>
+          <nav className="mb-3 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
+            <a href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</a>
+            <span>/</span>
+            <a href={`/scriptures/${slug}`} className="hover:text-[hsl(var(--primary))]">{scripture.name}</a>
+            <span>/</span>
+            <span className="text-[hsl(var(--foreground))]">Chapter {chapter.chapter_number}</span>
+          </nav>
           {chapter.sanskrit_title && (
             <p className="sanskrit mt-4 text-lg text-[hsl(var(--muted-foreground))]">
               {chapter.sanskrit_title}
@@ -84,6 +108,9 @@ export default function ChapterReaderPage() {
               {chapter.summary}
             </p>
           )}
+          <p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">
+            {verses.length} verses
+          </p>
         </header>
       </ScrollReveal>
 
@@ -125,6 +152,37 @@ export default function ChapterReaderPage() {
           );
         })}
       </ScrollReveal>
+
+      {/* Prev / Next Chapter Navigation */}
+      {totalChapters > 1 && (
+        <nav className="mt-10 flex items-center justify-between border-t border-[hsl(var(--border))] pt-6">
+          {hasPrev ? (
+            <a
+              href={`/scriptures/${slug}/chapters/${chapterNumber - 1}`}
+              className="group flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-2.5 text-sm transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
+            >
+              <svg className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Chapter {chapterNumber - 1}
+            </a>
+          ) : <div />}
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">
+            {chapterNumber} of {totalChapters}
+          </span>
+          {hasNext ? (
+            <a
+              href={`/scriptures/${slug}/chapters/${chapterNumber + 1}`}
+              className="group flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-2.5 text-sm transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
+            >
+              Chapter {chapterNumber + 1}
+              <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          ) : <div />}
+        </nav>
+      )}
     </main>
   );
 }

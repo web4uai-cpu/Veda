@@ -482,14 +482,21 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
     if understanding.canonical_reference:
         candidates.extend(await _reference_candidates(understanding.canonical_reference))
 
-    retrieval_results = await asyncio.gather(
-        _graph_concept_candidates(understanding),
-        _keyword_candidates(request),
-        _vector_candidates(request, understanding),
-        _fulltext_candidates(request),
-        _upload_chunk_candidates(request),
-        return_exceptions=True,
-    )
+    try:
+        retrieval_results = await asyncio.wait_for(
+            asyncio.gather(
+                _graph_concept_candidates(understanding),
+                _keyword_candidates(request),
+                _vector_candidates(request, understanding),
+                _fulltext_candidates(request),
+                _upload_chunk_candidates(request),
+                return_exceptions=True,
+            ),
+            timeout=10.0,
+        )
+    except asyncio.TimeoutError:
+        retrieval_results = []
+        warnings.append("Search retrieval timed out after 10s")
     for result in retrieval_results:
         if isinstance(result, list):
             candidates.extend(result)

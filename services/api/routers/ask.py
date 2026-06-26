@@ -7,9 +7,10 @@ Every answer is traceable to source evidence packets.
 
 from __future__ import annotations
 
+import asyncio
 import time
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 
 from models.schemas import (
     AskRequest,
@@ -23,16 +24,7 @@ from services.citation_service import resolve_scripture_citation_by_reference
 router = APIRouter(prefix="/api/v1", tags=["Ask VEDA"])
 
 
-@router.post("/ask", response_model=AskResponse)
-async def ask_veda(request: AskRequest):
-    """Ask VEDA a question and receive an evidence-grounded answer.
-
-    Flow:
-      1. Hybrid search retrieves citation-verified evidence
-      2. LLM generates answer constrained to evidence
-      3. Cited references are validated against the canonical corpus
-      4. Response includes answer + citations + raw evidence
-    """
+async def _process_ask(request: AskRequest) -> AskResponse:
     started = time.perf_counter()
     warnings: list[str] = []
 
@@ -78,3 +70,22 @@ async def ask_veda(request: AskRequest):
         query_time_ms=round(elapsed, 2),
         warnings=warnings,
     )
+
+
+@router.post("/ask", response_model=AskResponse)
+async def ask_veda(request: AskRequest):
+    """Ask VEDA a question and receive an evidence-grounded answer.
+
+    Flow:
+      1. Hybrid search retrieves citation-verified evidence
+      2. LLM generates answer constrained to evidence
+      3. Cited references are validated against the canonical corpus
+      4. Response includes answer + citations + raw evidence
+    """
+    try:
+        return await asyncio.wait_for(_process_ask(request), timeout=55.0)
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail="The request took too long to process. Please try a simpler query.",
+        )

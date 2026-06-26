@@ -99,6 +99,7 @@ async def _call_llm(
     client = AsyncOpenAI(
         api_key=settings.openrouter_api_key,
         base_url=settings.openrouter_base_url,
+        timeout=25.0,
     )
 
     started = time.perf_counter()

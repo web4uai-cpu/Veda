@@ -288,6 +288,7 @@ class VedaApiClient {
   private async request<T>(
     endpoint: string,
     options: RequestInit = {},
+    timeoutMs: number = 10000,
   ): Promise<T> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -301,7 +302,7 @@ class VedaApiClient {
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
       ...options,
       headers,
-      signal: AbortSignal.timeout(10000), // 10s timeout
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (!response.ok) {
@@ -523,14 +524,14 @@ class VedaApiClient {
     return this.request('/api/v1/ask', {
       method: 'POST',
       body: JSON.stringify({ mode: 'quick', include_evidence: true, ...request }),
-    });
+    }, 60000);
   }
 
   async research(request: { query: string; depth?: 'standard' | 'deep' }): Promise<ResearchResponse> {
     return this.request('/api/v1/research', {
       method: 'POST',
       body: JSON.stringify({ depth: 'standard', include_evidence: true, ...request }),
-    });
+    }, 60000);
   }
 }
 

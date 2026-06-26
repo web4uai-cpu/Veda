@@ -533,6 +533,91 @@ class VedaApiClient {
       body: JSON.stringify({ depth: 'standard', include_evidence: true, ...request }),
     }, 60000);
   }
+
+  // ---------------------------------------------------------------------------
+  // LIBRARY
+  // ---------------------------------------------------------------------------
+
+  async getBookmarks(): Promise<BookmarkListResponse> {
+    return this.request('/api/v1/library/bookmarks');
+  }
+
+  async createBookmark(target_type: string, target_id: string): Promise<Bookmark> {
+    return this.request('/api/v1/library/bookmarks', {
+      method: 'POST',
+      body: JSON.stringify({ target_type, target_id }),
+    });
+  }
+
+  async deleteBookmark(id: string): Promise<{ ok: boolean }> {
+    return this.request(`/api/v1/library/bookmarks/${id}`, { method: 'DELETE' });
+  }
+
+  async getNotes(search?: string): Promise<NoteListResponse> {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    const qs = params.toString();
+    return this.request(`/api/v1/library/notes${qs ? `?${qs}` : ''}`);
+  }
+
+  async createNote(data: { title: string; content: string; tags?: string[] }): Promise<Note> {
+    return this.request('/api/v1/library/notes', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateNote(id: string, data: Partial<{ title: string; content: string; tags: string[] }>): Promise<Note> {
+    return this.request(`/api/v1/library/notes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteNote(id: string): Promise<{ ok: boolean }> {
+    return this.request(`/api/v1/library/notes/${id}`, { method: 'DELETE' });
+  }
+
+  async getCollections(): Promise<CollectionListResponse> {
+    return this.request('/api/v1/library/collections');
+  }
+
+  async createCollection(data: { name: string; description?: string }): Promise<Collection> {
+    return this.request('/api/v1/library/collections', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateCollection(id: string, data: Partial<{ name: string; description: string }>): Promise<Collection> {
+    return this.request(`/api/v1/library/collections/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCollection(id: string): Promise<{ ok: boolean }> {
+    return this.request(`/api/v1/library/collections/${id}`, { method: 'DELETE' });
+  }
+
+  async addCollectionItem(collectionId: string, item_type: string, item_id: string): Promise<CollectionItem> {
+    return this.request(`/api/v1/library/collections/${collectionId}/items`, {
+      method: 'POST',
+      body: JSON.stringify({ item_type, item_id }),
+    });
+  }
+
+  async removeCollectionItem(collectionId: string, itemId: string): Promise<{ ok: boolean }> {
+    return this.request(`/api/v1/library/collections/${collectionId}/items/${itemId}`, { method: 'DELETE' });
+  }
+
+  async getMyUploads(): Promise<{ uploads: Upload[]; total: number }> {
+    return this.request('/api/v1/library/uploads');
+  }
+
+  async getMyReports(): Promise<ReportListResponse> {
+    return this.request('/api/v1/library/reports');
+  }
 }
 
 export interface Upload {
@@ -572,6 +657,83 @@ export interface ResearchResponse {
   model_used: string;
   query_time_ms: number;
   warnings: string[];
+}
+
+// =============================================================================
+// LIBRARY TYPES
+// =============================================================================
+
+export interface Bookmark {
+  id: string;
+  user_id: string;
+  target_type: string;
+  target_id: string;
+  created_at: string;
+}
+
+export interface BookmarkListResponse {
+  bookmarks: Bookmark[];
+  total: number;
+}
+
+export interface Note {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  target_type: string | null;
+  target_id: string | null;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteListResponse {
+  notes: Note[];
+  total: number;
+}
+
+export interface CollectionItem {
+  id: string;
+  collection_id: string;
+  item_type: string;
+  item_id: string;
+  added_at: string;
+}
+
+export interface Collection {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  is_public: boolean;
+  created_at: string;
+  item_count: number;
+  items: CollectionItem[];
+}
+
+export interface CollectionListResponse {
+  collections: Collection[];
+  total: number;
+}
+
+export interface Report {
+  id: string;
+  user_id: string;
+  title: string;
+  query: string;
+  mode: string;
+  content: string | null;
+  evidence_count: number;
+  sources_used: string[];
+  status: string;
+  created_at: string;
+  completed_at: string | null;
+}
+
+export interface ReportListResponse {
+  reports: Report[];
+  total: number;
 }
 
 export const api = new VedaApiClient(API_BASE_URL);

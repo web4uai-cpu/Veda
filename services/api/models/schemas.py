@@ -545,3 +545,117 @@ class AgentListResponse(BaseModel):
     """List of available agents."""
 
     agents: list[dict[str, str]]
+
+
+# =============================================================================
+# LIBRARY
+# =============================================================================
+
+
+class BookmarkCreate(BaseModel):
+    target_type: Literal["verse", "concept", "scripture"]
+    target_id: str
+
+
+class BookmarkResponse(BaseModel):
+    id: str
+    user_id: str
+    target_type: str
+    target_id: str
+    created_at: datetime
+
+
+class BookmarkListResponse(BaseModel):
+    bookmarks: list[BookmarkResponse]
+    total: int
+
+
+class NoteCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    content: str = Field(..., min_length=1)
+    target_type: str | None = None
+    target_id: str | None = None
+    tags: list[str] = Field(default_factory=list)
+
+
+class NoteUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    tags: list[str] | None = None
+
+
+class NoteResponse(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    content: str
+    target_type: str | None
+    target_id: str | None
+    tags: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class NoteListResponse(BaseModel):
+    notes: list[NoteResponse]
+    total: int
+
+
+class CollectionCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: str | None = None
+    is_public: bool = False
+
+
+class CollectionUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    is_public: bool | None = None
+
+
+class CollectionItemAdd(BaseModel):
+    item_type: str
+    item_id: str
+
+
+class CollectionItemResponse(BaseModel):
+    id: str
+    collection_id: str
+    item_type: str
+    item_id: str
+    added_at: datetime
+
+
+class CollectionResponse(BaseModel):
+    id: str
+    user_id: str
+    name: str
+    description: str | None
+    is_public: bool
+    created_at: datetime
+    item_count: int = 0
+    items: list[CollectionItemResponse] = Field(default_factory=list)
+
+
+class CollectionListResponse(BaseModel):
+    collections: list[CollectionResponse]
+    total: int
+
+
+class ReportResponse(BaseModel):
+    id: str
+    user_id: str
+    title: str
+    query: str
+    mode: str
+    content: str | None
+    evidence_count: int
+    sources_used: list[str]
+    status: str
+    created_at: datetime
+    completed_at: datetime | None
+
+
+class ReportListResponse(BaseModel):
+    reports: list[ReportResponse]
+    total: int

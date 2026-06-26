@@ -7,9 +7,11 @@ Business logic lives in services/graph_service.py.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query, Request
 
+from core.auth import require_admin
 from services import graph_service
+from services.seed_graph import seed_concepts, seed_schools, seed_persons, seed_relationships
 
 router = APIRouter(prefix="/api/v1/graph", tags=["Knowledge Graph"])
 
@@ -77,3 +79,14 @@ async def search(
     """Search graph nodes by name."""
     results = await graph_service.search_graph(q, node_type, limit)
     return {"query": q, "results": results, "total": len(results)}
+
+
+@router.post("/seed", dependencies=[Depends(require_admin)])
+async def seed_graph(request: Request):
+    """Seed the knowledge graph with core ontology data. Requires X-Admin-Key."""
+    await seed_concepts()
+    await seed_schools()
+    await seed_persons()
+    await seed_relationships()
+    stats = await graph_service.graph_stats()
+    return {"status": "seeded", "stats": stats}

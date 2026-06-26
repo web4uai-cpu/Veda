@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem, FloatingCard, AnimatedCounter, TextReveal } from '@/components/animations';
@@ -97,6 +99,15 @@ const FEATURES = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+
+  const handleSearch = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    router.push(`/ask?q=${encodeURIComponent(trimmed)}`);
+  };
+
   return (
     <div className="relative mx-auto max-w-5xl px-4 py-8 lg:px-8 lg:py-16">
       {/* Hero Section */}
@@ -152,11 +163,15 @@ export default function HomePage() {
                   <input
                     id="search-home"
                     type="text"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
                     placeholder="Ask about Dharma, Karma, Moksha, Atman..."
                     className="glow-input flex-1 bg-transparent px-4 py-4 text-base text-[hsl(var(--foreground))] outline-none placeholder:text-[hsl(var(--muted-foreground))]"
                   />
                   <button
                     id="search-submit"
+                    onClick={handleSearch}
                     className="shimmer-btn mr-2 rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(201,122,36,0.3)]"
                   >
                     Search

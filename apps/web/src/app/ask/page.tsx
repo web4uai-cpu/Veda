@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
 import { api, type AskResponse, type SearchMode } from '@/lib/api';
@@ -22,12 +23,22 @@ const MODES = [
 ];
 
 export default function AskPage() {
+  const searchParams = useSearchParams();
   const [question, setQuestion] = useState('');
   const [mode, setMode] = useState<SearchMode>('quick');
   const [askResponse, setAskResponse] = useState<AskResponse | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const initialQueryHandled = useRef(false);
+
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q && !initialQueryHandled.current) {
+      initialQueryHandled.current = true;
+      submitQuestion(q);
+    }
+  }, [searchParams]);
 
   async function submitQuestion(nextQuestion = question) {
     const query = nextQuestion.trim();

@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SplashScreen } from '@/components/splash/SplashScreen';
 import { AuthProvider } from '@/components/providers/AuthProvider';
@@ -45,7 +46,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
         {/* Sidebar Navigation */}
         <aside className="hidden lg:flex lg:w-[280px] lg:flex-col lg:border-r lg:border-[hsl(var(--border))] lg:bg-[hsl(var(--card))]/50 lg:backdrop-blur-xl">
           {/* Logo */}
-          <div className="flex h-16 items-center gap-3 border-b border-[hsl(var(--border))] px-6">
+          <Link href="/" className="flex h-16 items-center gap-3 border-b border-[hsl(var(--border))] px-6 transition-opacity hover:opacity-80">
             <motion.div
               className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(32,90%,60%)]"
               animate={{
@@ -67,7 +68,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
                 Knowledge System
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Nav Items */}
           <nav className="flex-1 space-y-1 px-3 py-4" role="navigation">
@@ -125,7 +126,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
           <header className="sticky top-0 z-20 flex h-16 items-center border-b border-[hsl(var(--border))] px-4 backdrop-blur-xl lg:hidden"
             style={{ backgroundColor: 'rgba(8, 8, 8, 0.8)' }}
           >
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
               <motion.div
                 className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(32,90%,60%)]"
                 animate={{
@@ -140,7 +141,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
                 <span className="sanskrit text-base font-bold text-white">व</span>
               </motion.div>
               <span className="scripture-title text-lg font-bold">VEDA</span>
-            </div>
+            </Link>
             <div className="ml-auto">
               <UserMenu compact />
             </div>

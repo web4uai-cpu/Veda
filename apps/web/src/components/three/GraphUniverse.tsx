@@ -138,7 +138,6 @@ function GraphNodeMesh({
         color={isActive ? '#fff' : 'rgba(255,255,255,0.55)'}
         anchorX="center"
         anchorY="top"
-        font="/fonts/Inter-Regular.woff"
       >
         {node.name}
       </Text>

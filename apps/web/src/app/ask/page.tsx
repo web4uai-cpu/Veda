@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
@@ -23,6 +23,18 @@ const MODES = [
 ];
 
 export default function AskPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-[calc(100vh-64px)] items-center justify-center lg:h-screen">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[hsl(var(--primary))] border-t-transparent" />
+      </div>
+    }>
+      <AskPageInner />
+    </Suspense>
+  );
+}
+
+function AskPageInner() {
   const searchParams = useSearchParams();
   const [question, setQuestion] = useState('');
   const [mode, setMode] = useState<SearchMode>('quick');

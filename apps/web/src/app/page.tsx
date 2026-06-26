@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRef, useState } from 'react';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem, FloatingCard, AnimatedCounter, TextReveal } from '@/components/animations';
+import { api, type SearchResponse, type SearchMode } from '@/lib/api';
 
 const SacredGeometry = dynamic(() => import('@/components/three/SacredGeometry'), { ssr: false });
 const ParticleField = dynamic(() => import('@/components/three/ParticleField'), { ssr: false });
@@ -99,13 +100,36 @@ const FEATURES = [
 ];
 
 export default function HomePage() {
-  const router = useRouter();
   const [query, setQuery] = useState('');
+  const [searchMode, setSearchMode] = useState<SearchMode>('quick');
+  const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
-    router.push(`/ask?q=${encodeURIComponent(trimmed)}`);
+
+    setSearchStatus('loading');
+    setSearchError(null);
+
+    try {
+      const response = await api.search({ query: trimmed, mode: searchMode, limit: 10 });
+      setSearchResult(response);
+      setSearchStatus('ready');
+      setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : 'Search failed');
+      setSearchResult(null);
+      setSearchStatus('error');
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchStatus('idle');
+    setSearchResult(null);
+    setSearchError(null);
   };
 
   return (
@@ -172,14 +196,143 @@ export default function HomePage() {
                   <button
                     id="search-submit"
                     onClick={handleSearch}
-                    className="shimmer-btn mr-2 rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(201,122,36,0.3)]"
+                    disabled={searchStatus === 'loading' || !query.trim()}
+                    className="shimmer-btn mr-2 rounded-xl bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] px-5 py-2.5 text-sm font-semibold text-white transition-all hover:shadow-[0_0_20px_rgba(201,122,36,0.3)] disabled:opacity-50"
                   >
-                    Search
+                    {searchStatus === 'loading' ? 'Searching...' : 'Search'}
                   </button>
                 </div>
               </div>
+
+              {/* Mode Selector */}
+              <div className="mt-3 flex items-center justify-center gap-1">
+                {(['quick', 'scholar', 'research'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setSearchMode(m)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                      searchMode === m
+                        ? 'bg-[hsl(var(--primary))]/20 text-[hsl(var(--primary))] border border-[hsl(var(--primary))]/30'
+                        : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] border border-transparent'
+                    }`}
+                  >
+                    {m.charAt(0).toUpperCase() + m.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           </ScrollReveal>
+
+          {/* Inline Search Results */}
+          <AnimatePresence>
+            {searchStatus !== 'idle' && (
+              <motion.div
+                ref={resultsRef}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.3 }}
+                className="mx-auto mt-6 max-w-2xl text-left"
+              >
+                {searchStatus === 'loading' && (
+                  <div className="rounded-2xl border border-[hsl(var(--border))] p-6 glass">
+                    <div className="flex items-center justify-center gap-3 text-sm text-[hsl(var(--muted-foreground))]">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[hsl(var(--primary))] border-t-transparent" />
+                      Searching scriptures and knowledge graph...
+                    </div>
+                  </div>
+                )}
+
+                {searchStatus === 'error' && (
+                  <div className="rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-center text-sm text-red-200">
+                    {searchError}
+                    <button onClick={clearSearch} className="ml-3 underline hover:text-red-100">Dismiss</button>
+                  </div>
+                )}
+
+                {searchStatus === 'ready' && searchResult && (
+                  <div className="space-y-3">
+                    {/* Results header */}
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium uppercase tracking-wider text-[hsl(var(--muted-foreground))]">
+                        {searchResult.total} results in {Math.round(searchResult.query_time_ms)}ms
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/ask?q=${encodeURIComponent(query)}`}
+                          className="rounded-lg bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(32,80%,55%)] px-3 py-1.5 text-xs font-semibold text-white transition-all hover:shadow-[0_0_16px_rgba(201,122,36,0.3)]"
+                        >
+                          Get AI Answer
+                        </Link>
+                        <button onClick={clearSearch} className="text-xs text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]">
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Detected concepts */}
+                    {searchResult.understanding.concepts.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {searchResult.understanding.concepts.map((c) => (
+                          <span key={c} className="rounded-full bg-[hsl(var(--primary))]/10 px-2.5 py-0.5 text-[11px] font-medium text-[hsl(var(--primary))]">
+                            {c}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Evidence packets */}
+                    {searchResult.results.length === 0 && (
+                      <div className="rounded-2xl border border-[hsl(var(--border))] p-6 text-center text-sm text-[hsl(var(--muted-foreground))] glass">
+                        No results found. Try a different query or&nbsp;
+                        <Link href={`/ask?q=${encodeURIComponent(query)}`} className="text-[hsl(var(--primary))] underline">
+                          ask VEDA directly
+                        </Link>.
+                      </div>
+                    )}
+
+                    {searchResult.results.map((packet) => (
+                      <motion.article
+                        key={packet.packet_id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-2xl border border-[hsl(var(--border))] p-4 glass transition-all hover:border-[hsl(var(--primary))]/20"
+                      >
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
+                          <span className="rounded-full bg-[hsl(var(--primary))]/10 px-2 py-0.5 text-[hsl(var(--primary))]">
+                            {packet.citation.reference}
+                          </span>
+                          <span>{packet.citation.source_name}</span>
+                          <span className={`rounded-full px-1.5 py-0.5 ${
+                            packet.citation.confidence >= 0.8 ? 'bg-emerald-500/15 text-emerald-400'
+                            : packet.citation.confidence >= 0.5 ? 'bg-amber-500/15 text-amber-400'
+                            : 'bg-red-500/15 text-red-400'
+                          }`}>
+                            {Math.round(packet.citation.confidence * 100)}%
+                          </span>
+                          <span>Level {packet.citation.evidence_level}</span>
+                        </div>
+                        <h3 className="mb-1 text-sm font-semibold text-[hsl(var(--foreground))]">
+                          {packet.title}
+                        </h3>
+                        <p className="line-clamp-3 text-sm leading-relaxed text-[hsl(var(--muted-foreground))]">
+                          {packet.content}
+                        </p>
+                      </motion.article>
+                    ))}
+
+                    {/* Warnings */}
+                    {searchResult.warnings.map((w) => (
+                      <div key={w} className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+                        {w}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

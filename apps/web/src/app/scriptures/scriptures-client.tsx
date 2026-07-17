@@ -58,7 +58,7 @@ interface DisplayGroup {
   items: Scripture[];
 }
 
-function buildDisplayGroups(scriptures: Scripture[], activeFilter: string): DisplayGroup[] {
+export function buildDisplayGroups(scriptures: Scripture[], activeFilter: string): DisplayGroup[] {
   const byCat = new Map<string, Scripture[]>();
   for (const s of scriptures) {
     const list = byCat.get(s.category);

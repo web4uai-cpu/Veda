@@ -26,6 +26,7 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://veda.example.com'),
   title: {
     default: 'VEDA — Knowledge Operating System for Sanatan Dharma',
     template: '%s | VEDA',

@@ -1,97 +1,89 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { api, type Chapter, type Scripture, type Verse } from '@/lib/api';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import {
+  getScriptureBySlugServer,
+  getChapterServer,
+  getVersesServer,
+  SITE_URL,
+} from '@/lib/server-api';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
 
-export default function ChapterReaderPage() {
-  const params = useParams<{ slug: string; chapterNumber: string }>();
-  const slug = params.slug;
-  const chapterNumber = Number(params.chapterNumber);
-  const [scripture, setScripture] = useState<Scripture | null>(null);
-  const [chapter, setChapter] = useState<Chapter | null>(null);
-  const [verses, setVerses] = useState<Verse[]>([]);
-  const [totalChapters, setTotalChapters] = useState(0);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+export const revalidate = 3600; // canonical content — revalidate hourly
 
-  useEffect(() => {
-    let cancelled = false;
+interface PageProps {
+  params: Promise<{ slug: string; chapterNumber: string }>;
+}
 
-    async function loadChapter() {
-      try {
-        setStatus('loading');
-        const scriptureResult = await api.getScriptureBySlug(slug);
-        const [chapterResult, versesResult] = await Promise.all([
-          api.getChapter(scriptureResult.id, chapterNumber),
-          api.getVerses(scriptureResult.id, chapterNumber, 1, 200),
-        ]);
-        if (!cancelled) {
-          setScripture(scriptureResult);
-          setChapter(chapterResult);
-          setVerses(versesResult.verses);
-          setTotalChapters(scriptureResult.chapter_count);
-          setStatus('ready');
-        }
-      } catch {
-        if (!cancelled) setStatus('error');
-      }
-    }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug, chapterNumber } = await params;
+  const scripture = await getScriptureBySlugServer(slug);
+  if (!scripture) return { title: 'Chapter Not Available' };
 
-    loadChapter();
-    return () => {
-      cancelled = true;
-    };
-  }, [chapterNumber, slug]);
+  const chapter = await getChapterServer(scripture.id, Number(chapterNumber));
+  const title = chapter?.title
+    ? `${scripture.name} — Chapter ${chapterNumber}: ${chapter.title}`
+    : `${scripture.name} — Chapter ${chapterNumber}`;
+  const description =
+    chapter?.summary ??
+    `Read ${scripture.name} chapter ${chapterNumber} with Sanskrit, transliteration, and English translation.`;
+  return {
+    title,
+    description,
+    alternates: { canonical: `/scriptures/${slug}/chapters/${chapterNumber}` },
+    openGraph: {
+      title: `${title} | VEDA`,
+      description,
+      type: 'article',
+      url: `${SITE_URL}/scriptures/${slug}/chapters/${chapterNumber}`,
+    },
+  };
+}
 
-  if (status === 'loading') {
-    return (
-      <main className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
-        <div className="mb-4 h-4 w-32 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
-        <div className="mb-2 h-5 w-48 animate-pulse rounded bg-[hsl(var(--muted))]/30" />
-        <div className="mb-8 h-10 w-80 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
-        <div className="space-y-6">
-          {Array.from({ length: 5 }, (_, i) => (
-            <div key={i} className="space-y-2 rounded-xl border border-[hsl(var(--border))] p-5" style={{ animationDelay: `${i * 100}ms` }}>
-              <div className="h-3 w-16 animate-pulse rounded bg-[hsl(var(--muted))]/30" />
-              <div className="h-6 w-full animate-pulse rounded bg-[hsl(var(--muted))]/20" />
-              <div className="h-4 w-3/4 animate-pulse rounded bg-[hsl(var(--muted))]/15" />
-              <div className="h-4 w-full animate-pulse rounded bg-[hsl(var(--muted))]/20" />
-            </div>
-          ))}
-        </div>
-      </main>
-    );
-  }
+export default async function ChapterReaderPage({ params }: PageProps) {
+  const { slug, chapterNumber: chapterParam } = await params;
+  const chapterNumber = Number(chapterParam);
+  if (!Number.isInteger(chapterNumber) || chapterNumber < 1) notFound();
 
-  if (status === 'error' || !scripture || !chapter) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10 text-center lg:px-8">
-        <h1 className="scripture-title mb-3 text-3xl font-bold">Chapter Not Available</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
-          Start the API and ingest verses before opening this chapter.
-        </p>
-        <a
-          href={`/scriptures/${slug}`}
-          className="mt-4 inline-block text-sm text-[hsl(var(--primary))] hover:underline"
-        >
-          Back to scripture
-        </a>
-      </main>
-    );
-  }
+  const scripture = await getScriptureBySlugServer(slug);
+  if (!scripture) notFound();
 
+  const [chapter, versesResult] = await Promise.all([
+    getChapterServer(scripture.id, chapterNumber),
+    getVersesServer(scripture.id, chapterNumber),
+  ]);
+  if (!chapter) notFound();
+
+  const verses = versesResult?.verses ?? [];
+  const totalChapters = scripture.chapter_count;
   const hasPrev = chapterNumber > 1;
   const hasNext = chapterNumber < totalChapters;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Chapter',
+    name: chapter.title ?? `Chapter ${chapterNumber}`,
+    position: chapterNumber,
+    isPartOf: {
+      '@type': 'Book',
+      name: scripture.name,
+      url: `${SITE_URL}/scriptures/${slug}`,
+    },
+    url: `${SITE_URL}/scriptures/${slug}/chapters/${chapterNumber}`,
+  };
+
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ScrollReveal animation="fade-up">
         <header className="mb-8 border-b border-[hsl(var(--border))] pb-6">
           <nav className="mb-3 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-            <a href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</a>
+            <Link href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</Link>
             <span>/</span>
-            <a href={`/scriptures/${slug}`} className="hover:text-[hsl(var(--primary))]">{scripture.name}</a>
+            <Link href={`/scriptures/${slug}`} className="hover:text-[hsl(var(--primary))]">{scripture.name}</Link>
             <span>/</span>
             <span className="text-[hsl(var(--foreground))]">Chapter {chapter.chapter_number}</span>
           </nav>
@@ -157,7 +149,7 @@ export default function ChapterReaderPage() {
       {totalChapters > 1 && (
         <nav className="mt-10 flex items-center justify-between border-t border-[hsl(var(--border))] pt-6">
           {hasPrev ? (
-            <a
+            <Link
               href={`/scriptures/${slug}/chapters/${chapterNumber - 1}`}
               className="group flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-2.5 text-sm transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
             >
@@ -165,13 +157,13 @@ export default function ChapterReaderPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Chapter {chapterNumber - 1}
-            </a>
+            </Link>
           ) : <div />}
           <span className="text-xs text-[hsl(var(--muted-foreground))]">
             {chapterNumber} of {totalChapters}
           </span>
           {hasNext ? (
-            <a
+            <Link
               href={`/scriptures/${slug}/chapters/${chapterNumber + 1}`}
               className="group flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-4 py-2.5 text-sm transition-colors hover:border-[hsl(var(--primary))] hover:text-[hsl(var(--primary))]"
             >
@@ -179,7 +171,7 @@ export default function ChapterReaderPage() {
               <svg className="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-            </a>
+            </Link>
           ) : <div />}
         </nav>
       )}

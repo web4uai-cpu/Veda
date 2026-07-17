@@ -1,78 +1,68 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { api, type Chapter, type Scripture } from '@/lib/api';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import {
+  getScriptureBySlugServer,
+  getChaptersServer,
+  SITE_URL,
+} from '@/lib/server-api';
 import { ScrollReveal, ScrollRevealItem, FloatingCard } from '@/components/animations';
 
-export default function ScriptureDetailPage() {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
-  const [scripture, setScripture] = useState<Scripture | null>(null);
-  const [chapters, setChapters] = useState<Chapter[]>([]);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+export const revalidate = 3600; // canonical content — revalidate hourly
 
-  useEffect(() => {
-    let cancelled = false;
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
 
-    async function loadScripture() {
-      try {
-        setStatus('loading');
-        const scriptureResult = await api.getScriptureBySlug(slug);
-        const chapterResult = await api.getChapters(scriptureResult.id);
-        if (!cancelled) {
-          setScripture(scriptureResult);
-          setChapters(chapterResult.chapters);
-          setStatus('ready');
-        }
-      } catch {
-        if (!cancelled) setStatus('error');
-      }
-    }
-
-    loadScripture();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
-
-  if (status === 'loading') {
-    return (
-      <main className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
-        <div className="mb-4 h-4 w-32 animate-pulse rounded bg-[hsl(var(--muted))]/40" />
-        <div className="mb-8 h-40 animate-pulse rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10" />
-        <div className="grid gap-4 md:grid-cols-2">
-          {Array.from({ length: 4 }, (_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10" style={{ animationDelay: `${i * 100}ms` }} />
-          ))}
-        </div>
-      </main>
-    );
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const scripture = await getScriptureBySlugServer(slug);
+  if (!scripture) {
+    return { title: 'Scripture Not Available' };
   }
+  const description =
+    scripture.description ??
+    `Read the ${scripture.name} with Sanskrit, IAST transliteration, and English translation.`;
+  return {
+    title: scripture.name,
+    description,
+    alternates: { canonical: `/scriptures/${slug}` },
+    openGraph: {
+      title: `${scripture.name} | VEDA`,
+      description,
+      type: 'book',
+      url: `${SITE_URL}/scriptures/${slug}`,
+    },
+  };
+}
 
-  if (status === 'error' || !scripture) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10 text-center lg:px-8">
-        <h1 className="scripture-title mb-3 text-3xl font-bold">Scripture Not Available</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
-          Start the API and ingest the canonical corpus to read this scripture.
-        </p>
-        <a
-          href="/scriptures"
-          className="mt-4 inline-block text-sm text-[hsl(var(--primary))] hover:underline"
-        >
-          Back to all scriptures
-        </a>
-      </main>
-    );
-  }
+export default async function ScriptureDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const scripture = await getScriptureBySlugServer(slug);
+  if (!scripture) notFound();
+
+  const chapters = (await getChaptersServer(scripture.id)) ?? [];
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Book',
+    name: scripture.name,
+    alternateName: scripture.sanskrit_name ?? undefined,
+    description: scripture.description ?? undefined,
+    inLanguage: scripture.language,
+    url: `${SITE_URL}/scriptures/${slug}`,
+    numberOfPages: scripture.chapter_count > 0 ? scripture.chapter_count : undefined,
+  };
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ScrollReveal animation="fade-up">
         <nav className="mb-4 flex items-center gap-2 text-sm text-[hsl(var(--muted-foreground))]">
-          <a href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</a>
+          <Link href="/scriptures" className="hover:text-[hsl(var(--primary))]">Scriptures</Link>
           <span>/</span>
           <span className="text-[hsl(var(--foreground))]">{scripture.name}</span>
         </nav>
@@ -110,10 +100,9 @@ export default function ScriptureDetailPage() {
         {chapters.map((chapter) => (
           <ScrollRevealItem key={chapter.id} animation="fade-up">
             <FloatingCard className="knowledge-card" tiltMax={4}>
-              <motion.a
+              <Link
                 href={`/scriptures/${slug}/chapters/${chapter.chapter_number}`}
-                className="block"
-                whileHover={{ x: 3 }}
+                className="block transition-transform hover:translate-x-1"
               >
                 <p className="text-xs uppercase tracking-wide text-[hsl(var(--muted-foreground))]">
                   Chapter {chapter.chapter_number}
@@ -134,7 +123,7 @@ export default function ScriptureDetailPage() {
                 <p className="mt-3 text-xs text-[hsl(var(--primary))]">
                   {chapter.verse_count} verses
                 </p>
-              </motion.a>
+              </Link>
             </FloatingCard>
           </ScrollRevealItem>
         ))}

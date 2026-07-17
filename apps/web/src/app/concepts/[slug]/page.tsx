@@ -1,62 +1,59 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { api, type ConceptDetail } from '@/lib/api';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { getConceptServer, SITE_URL } from '@/lib/server-api';
 import { ScrollReveal, ScrollRevealItem, FloatingCard } from '@/components/animations';
 
-export default function ConceptDetailPage() {
-  const params = useParams<{ slug: string }>();
-  const slug = params.slug;
-  const [detail, setDetail] = useState<ConceptDetail | null>(null);
-  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+export const revalidate = 3600;
 
-  useEffect(() => {
-    let cancelled = false;
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
 
-    async function loadConcept() {
-      try {
-        setStatus('loading');
-        const result = await api.getConcept(slug);
-        if (!cancelled) {
-          setDetail(result);
-          setStatus('ready');
-        }
-      } catch {
-        if (!cancelled) setStatus('error');
-      }
-    }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const detail = await getConceptServer(slug);
+  if (!detail) return { title: 'Concept Not Available' };
 
-    loadConcept();
-    return () => {
-      cancelled = true;
-    };
-  }, [slug]);
+  const { concept } = detail;
+  const description =
+    concept.summary ??
+    `Explore ${concept.name} in the VEDA knowledge graph — related concepts, schools, and teachers.`;
+  return {
+    title: concept.name,
+    description,
+    alternates: { canonical: `/concepts/${slug}` },
+    openGraph: {
+      title: `${concept.name} | VEDA`,
+      description,
+      type: 'article',
+      url: `${SITE_URL}/concepts/${slug}`,
+    },
+  };
+}
 
-  if (status === 'loading') {
-    return (
-      <main className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
-        <div className="h-40 animate-pulse rounded-2xl border border-[hsl(var(--border))] glass" />
-      </main>
-    );
-  }
-
-  if (status === 'error' || !detail) {
-    return (
-      <main className="mx-auto max-w-3xl px-4 py-10 text-center lg:px-8">
-        <h1 className="scripture-title mb-3 text-3xl font-bold">Concept Not Available</h1>
-        <p className="text-[hsl(var(--muted-foreground))]">
-          Start Neo4j and seed the ontology graph to explore this concept.
-        </p>
-      </main>
-    );
-  }
+export default async function ConceptDetailPage({ params }: PageProps) {
+  const { slug } = await params;
+  const detail = await getConceptServer(slug);
+  if (!detail) notFound();
 
   const { concept } = detail;
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTerm',
+    name: concept.name,
+    alternateName: concept.sanskrit_name ?? undefined,
+    description: concept.summary ?? undefined,
+    url: `${SITE_URL}/concepts/${slug}`,
+  };
+
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <ScrollReveal animation="fade-up">
         <section className="mb-8 rounded-2xl border border-[hsl(var(--border))] p-6 glass">
           {concept.sanskrit_name && (
@@ -83,17 +80,16 @@ export default function ConceptDetailPage() {
       <div className="grid gap-5 lg:grid-cols-3">
         <ConceptPanel title="Related Concepts" empty="No related concepts yet.">
           {detail.related_concepts.map((item) => (
-            <motion.a
+            <Link
               key={item.slug}
               href={`/concepts/${item.slug}`}
-              className="block rounded-xl border border-[hsl(var(--border))] p-3 text-sm glass"
-              whileHover={{ x: 3, borderColor: 'rgba(201, 122, 36, 0.35)' }}
+              className="block rounded-xl border border-[hsl(var(--border))] p-3 text-sm glass transition-all hover:translate-x-1 hover:border-[hsl(var(--primary))]/40"
             >
               <span className="font-medium text-[hsl(var(--foreground))]">{item.name}</span>
               <span className="ml-2 text-xs text-[hsl(var(--muted-foreground))]">
                 {item.relationship}
               </span>
-            </motion.a>
+            </Link>
           ))}
         </ConceptPanel>
 

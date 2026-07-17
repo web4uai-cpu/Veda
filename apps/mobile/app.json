@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "VEDA",
-    "slug": "veda",
+    "slug": "veda-the-sanatan-wisdom",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "veda",
@@ -33,6 +33,15 @@
     ],
     "experiments": {
       "typedRoutes": false
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "a7b8e319-f518-4cf0-a919-5a5ff24eec70"
+      }
+    },
+    "owner": "web4uai-2"
   }
 }

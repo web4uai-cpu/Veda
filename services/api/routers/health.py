@@ -64,9 +64,30 @@ async def health_check():
 
 @router.get("/api/v1/health/metrics")
 async def health_metrics():
-    """Internal metrics snapshot — request counts, latencies, agent usage."""
+    """Internal metrics snapshot — request counts, latencies, agent usage.
+
+    Note: per-process counters only. Use GET /metrics (Prometheus) for
+    monitoring multi-worker deployments.
+    """
     from core.observability import get_metrics_snapshot
     return get_metrics_snapshot()
+
+
+@router.get("/metrics", include_in_schema=False)
+async def prometheus_metrics():
+    """Prometheus exposition endpoint (scrape target)."""
+    from fastapi.responses import Response
+
+    from core.observability import PROMETHEUS_AVAILABLE, render_prometheus
+
+    if not PROMETHEUS_AVAILABLE:
+        return Response(
+            content="prometheus_client not installed\n",
+            status_code=501,
+            media_type="text/plain",
+        )
+    payload, content_type = render_prometheus()
+    return Response(content=payload, media_type=content_type)
 
 
 @router.post("/api/v1/admin/migrate")

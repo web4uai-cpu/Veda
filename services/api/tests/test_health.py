@@ -39,3 +39,9 @@ async def test_root_endpoint(app_client):
     assert data["name"] == "VEDA API"
     assert data["version"] == "0.2.0"
     assert "endpoints" in data
+
+
+async def test_prometheus_metrics_endpoint(app_client):
+    resp = await app_client.get("/metrics")
+    assert resp.status_code == 200
+    assert b"veda_http_requests_total" in resp.content

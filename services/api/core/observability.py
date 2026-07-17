@@ -1,18 +1,64 @@
 """
 VEDA — Observability
 =======================
-In-memory metrics counters and structured logging utilities.
-Lightweight — no external dependencies (Prometheus/OTel can be added later).
+Metrics for the API:
+
+- Prometheus counters/histograms (authoritative, multi-worker safe when
+  PROMETHEUS_MULTIPROC_DIR is set) exposed at GET /metrics
+- Legacy in-memory snapshot kept for GET /api/v1/health/metrics
+  (per-process only — use Prometheus for real monitoring)
 """
 
 from __future__ import annotations
 
 import logging
+import re
 import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 
 logger = logging.getLogger("veda.observability")
+
+# --- Prometheus (optional dependency; degrade gracefully if missing) ---
+
+try:
+    from prometheus_client import Counter, Histogram
+
+    PROMETHEUS_AVAILABLE = True
+
+    REQUESTS_TOTAL = Counter(
+        "veda_http_requests_total",
+        "Total HTTP requests",
+        ["path", "status"],
+    )
+    REQUEST_LATENCY = Histogram(
+        "veda_http_request_duration_seconds",
+        "HTTP request latency in seconds",
+        ["path"],
+        buckets=(0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0),
+    )
+    AGENT_INVOCATIONS = Counter(
+        "veda_agent_invocations_total",
+        "Agent invocations",
+        ["agent"],
+    )
+    RATE_LIMIT_HITS = Counter(
+        "veda_rate_limit_hits_total",
+        "Requests rejected by the rate limiter",
+    )
+except ImportError:  # prometheus_client not installed
+    PROMETHEUS_AVAILABLE = False
+
+# ULID path segments (e.g. /scriptures/scp_01ABC...) would explode label
+# cardinality — collapse them to a placeholder.
+_ID_SEGMENT = re.compile(r"/[a-z]{3}_[0-9A-Za-z]{10,}")
+_NUM_SEGMENT = re.compile(r"/\d+")
+
+
+def normalize_path(path: str) -> str:
+    path = _ID_SEGMENT.sub("/{id}", path)
+    path = _NUM_SEGMENT.sub("/{n}", path)
+    return path
 
 
 @dataclass
@@ -41,13 +87,45 @@ def record_request(path: str, status: int, duration_ms: float) -> None:
     if status >= 500:
         metrics.error_count += 1
 
+    if PROMETHEUS_AVAILABLE:
+        norm = normalize_path(path)
+        REQUESTS_TOTAL.labels(path=norm, status=str(status)).inc()
+        REQUEST_LATENCY.labels(path=norm).observe(duration_ms / 1000.0)
+
 
 def record_agent_invocation(agent_name: str) -> None:
     metrics.agent_invocations[agent_name] += 1
+    if PROMETHEUS_AVAILABLE:
+        AGENT_INVOCATIONS.labels(agent=agent_name).inc()
 
 
 def record_rate_limit_hit() -> None:
     metrics.rate_limit_hits += 1
+    if PROMETHEUS_AVAILABLE:
+        RATE_LIMIT_HITS.inc()
+
+
+def render_prometheus() -> tuple[bytes, str]:
+    """Render metrics in Prometheus exposition format.
+
+    Uses multiprocess collection when PROMETHEUS_MULTIPROC_DIR is set
+    (required for uvicorn --workers > 1).
+    """
+    import os
+
+    from prometheus_client import (
+        CONTENT_TYPE_LATEST,
+        CollectorRegistry,
+        REGISTRY,
+        generate_latest,
+        multiprocess,
+    )
+
+    if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return generate_latest(registry), CONTENT_TYPE_LATEST
+    return generate_latest(REGISTRY), CONTENT_TYPE_LATEST
 
 
 def get_metrics_snapshot() -> dict:

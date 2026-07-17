@@ -28,6 +28,9 @@ python-multipart>=0.0.9
 # --- Firebase ---
 firebase-admin>=6.5.0
 
+# --- Observability ---
+prometheus-client>=0.21.0
+
 # --- Utilities ---
 orjson>=3.10.0
 

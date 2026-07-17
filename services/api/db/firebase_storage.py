@@ -7,6 +7,7 @@ Handles file upload, download, and deletion for the user-uploads bucket.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -61,7 +62,8 @@ async def upload_file(path: str, data: bytes, content_type: str) -> str:
     """
     bucket = _get_bucket()
     blob = bucket.blob(path)
-    blob.upload_from_string(data, content_type=content_type)
+    # google-cloud-storage is synchronous — keep it off the event loop.
+    await asyncio.to_thread(blob.upload_from_string, data, content_type=content_type)
 
     logger.info("Uploaded %d bytes to %s", len(data), path)
     return path
@@ -79,11 +81,10 @@ async def download_file(path: str) -> bytes:
     bucket = _get_bucket()
     blob = bucket.blob(path)
 
-    if not blob.exists():
+    if not await asyncio.to_thread(blob.exists):
         raise RuntimeError(f"Storage download failed: blob '{path}' not found")
 
-    data = blob.download_as_bytes()
-    return data
+    return await asyncio.to_thread(blob.download_as_bytes)
 
 
 async def delete_file(path: str) -> None:
@@ -92,7 +93,7 @@ async def delete_file(path: str) -> None:
     blob = bucket.blob(path)
 
     try:
-        blob.delete()
+        await asyncio.to_thread(blob.delete)
     except Exception:
         logger.warning("Storage delete may have failed for %s", path)
 

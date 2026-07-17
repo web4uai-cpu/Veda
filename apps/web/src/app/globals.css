@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-
+/* Fonts are loaded via next/font in app/layout.tsx (no render-blocking import). */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -87,7 +86,7 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -191,12 +190,12 @@
 @layer components {
   /* --- Sanskrit Text --- */
   .sanskrit {
-    font-family: 'Noto Sans Devanagari', 'Mukta', sans-serif;
+    font-family: var(--font-devanagari), 'Noto Sans Devanagari', sans-serif;
     line-height: 1.8;
   }
 
   .scripture-title {
-    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-family: var(--font-serif), 'Cormorant Garamond', Georgia, serif;
   }
 
   /* --- Knowledge Card (Glass Morphism) --- */

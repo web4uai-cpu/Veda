@@ -28,8 +28,12 @@ router = APIRouter(prefix="/api/v1/library", tags=["Library"])
 # ---------------------------------------------------------------------------
 
 @router.get("/bookmarks", response_model=BookmarkListResponse)
-async def list_bookmarks(user: dict = Depends(get_current_user)):
-    rows, total = await library_service.list_bookmarks(user["uid"])
+async def list_bookmarks(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    rows, total = await library_service.list_bookmarks(user["uid"], page, per_page)
     return BookmarkListResponse(
         bookmarks=[BookmarkResponse(**r) for r in rows],
         total=total,
@@ -63,9 +67,11 @@ async def delete_bookmark(
 @router.get("/notes", response_model=NoteListResponse)
 async def list_notes(
     search: str | None = Query(None, description="Search in title/content"),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
     user: dict = Depends(get_current_user),
 ):
-    rows, total = await library_service.list_notes(user["uid"], search)
+    rows, total = await library_service.list_notes(user["uid"], search, page, per_page)
     return NoteListResponse(
         notes=[NoteResponse(**r) for r in rows],
         total=total,
@@ -111,8 +117,12 @@ async def delete_note(
 # ---------------------------------------------------------------------------
 
 @router.get("/collections", response_model=CollectionListResponse)
-async def list_collections(user: dict = Depends(get_current_user)):
-    rows, total = await library_service.list_collections(user["uid"])
+async def list_collections(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    rows, total = await library_service.list_collections(user["uid"], page, per_page)
     return CollectionListResponse(
         collections=[CollectionResponse(**r) for r in rows],
         total=total,
@@ -187,8 +197,12 @@ async def remove_collection_item(
 # ---------------------------------------------------------------------------
 
 @router.get("/uploads", response_model=UploadListResponse)
-async def list_uploads(user: dict = Depends(get_current_user)):
-    rows, total = await library_service.list_user_uploads(user["uid"])
+async def list_uploads(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    rows, total = await library_service.list_user_uploads(user["uid"], page, per_page)
     return UploadListResponse(uploads=rows, total=total)
 
 
@@ -197,8 +211,12 @@ async def list_uploads(user: dict = Depends(get_current_user)):
 # ---------------------------------------------------------------------------
 
 @router.get("/reports", response_model=ReportListResponse)
-async def list_reports(user: dict = Depends(get_current_user)):
-    rows, total = await library_service.list_user_reports(user["uid"])
+async def list_reports(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(50, ge=1, le=200),
+    user: dict = Depends(get_current_user),
+):
+    rows, total = await library_service.list_user_reports(user["uid"], page, per_page)
     return ReportListResponse(
         reports=[ReportResponse(**r) for r in rows],
         total=total,

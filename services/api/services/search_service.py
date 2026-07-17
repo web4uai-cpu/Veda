@@ -505,10 +505,17 @@ async def search_evidence(request: SearchRequest) -> SearchResponse:
 
     ranked = _fuse_candidates(candidates)
 
+    # Resolve citations for the top candidates concurrently — doing this
+    # sequentially costs ~2 Postgres round trips per result.
+    packets = await asyncio.gather(
+        *(_to_evidence(candidate) for candidate in ranked[: request.limit]),
+        return_exceptions=True,
+    )
     evidence: list[EvidencePacketResponse] = []
-    for candidate in ranked[: request.limit]:
-        packet = await _to_evidence(candidate)
-        if packet:
+    for packet in packets:
+        if isinstance(packet, Exception):
+            warnings.append(f"Evidence resolution failed: {packet}")
+        elif packet:
             evidence.append(packet)
 
     if not evidence:

@@ -95,6 +95,18 @@ class ServiceUnavailableError(VedaError):
         )
 
 
+class UnauthorizedError(VedaError):
+    """Missing or invalid credentials (HTTP 401)."""
+
+    def __init__(self, message: str = "Authentication required"):
+        super().__init__(
+            error="Unauthorized",
+            code="AUTHENTICATION_REQUIRED",
+            message=message,
+            status_code=401,
+        )
+
+
 class ForbiddenError(VedaError):
     """Permission denied (HTTP 403)."""
 

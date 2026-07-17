@@ -6,13 +6,14 @@ Business logic for admin PDF uploads: storage, extraction, chunking.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import Any
 
 from fastapi import UploadFile
 
 from core.ulid import generate_id
-from db.postgres import execute, fetch, fetchrow, fetchval
+from db.postgres import execute, executemany, fetch, fetchrow, fetchval
 from db.firebase_storage import upload_file, download_file, delete_file
 from services.pdf_service import extract_text_from_pdf, chunk_text
 
@@ -133,27 +134,32 @@ async def process_upload(upload_id: str) -> dict[str, Any]:
 
     try:
         pdf_bytes = await download_file(upload["storage_key"])
-        pages = extract_text_from_pdf(pdf_bytes)
-        chunks = chunk_text(pages)
+        # PyMuPDF extraction and chunking are CPU-bound — keep them off the
+        # event loop so large PDFs don't stall other requests.
+        pages = await asyncio.to_thread(extract_text_from_pdf, pdf_bytes)
+        chunks = await asyncio.to_thread(chunk_text, pages)
 
         if not chunks:
             raise ValueError("No text could be extracted from the PDF")
 
-        for chunk in chunks:
-            chunk_id = generate_id("chk")
-            await execute(
-                """
-                INSERT INTO upload_chunks (id, upload_id, chunk_index, content, page_start, page_end)
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (upload_id, chunk_index) DO UPDATE SET content = $4
-                """,
-                chunk_id,
-                upload_id,
-                chunk["chunk_index"],
-                chunk["content"],
-                chunk["page_start"],
-                chunk["page_end"],
-            )
+        await executemany(
+            """
+            INSERT INTO upload_chunks (id, upload_id, chunk_index, content, page_start, page_end)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (upload_id, chunk_index) DO UPDATE SET content = $4
+            """,
+            [
+                (
+                    generate_id("chk"),
+                    upload_id,
+                    chunk["chunk_index"],
+                    chunk["content"],
+                    chunk["page_start"],
+                    chunk["page_end"],
+                )
+                for chunk in chunks
+            ],
+        )
 
         await execute(
             "UPDATE user_uploads SET status = 'completed' WHERE id = $1",

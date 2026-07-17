@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     app_name: str = "VEDA API"
     app_version: str = "0.3.0"
     debug: bool = False
+    environment: str = "development"  # development | production
+    # Trust X-Forwarded-For for client identity (enable only behind a proxy
+    # that sets it, e.g. Railway/Vercel edge).
+    trust_proxy_headers: bool = False
 
     # --- Database (PostgreSQL via Railway) ---
     database_url: str = "postgresql://veda:vedadev2026@localhost:5432/veda"
@@ -82,5 +86,25 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> list[str]:
         return [item.strip() for item in self.cors_origins.split(",") if item.strip()]
 
+    @property
+    def is_production(self) -> bool:
+        return self.environment.lower() in ("production", "prod")
+
+    def validate_production(self) -> list[str]:
+        """Return a list of fatal misconfigurations when running in production."""
+        problems: list[str] = []
+        if not self.is_production:
+            return problems
+        if "vedadev2026" in self.database_url:
+            problems.append("database_url uses the default dev password")
+        if self.neo4j_password == "vedadev2026":
+            problems.append("neo4j_password uses the default dev password")
+        if not self.admin_api_key:
+            problems.append("admin_api_key is not set")
+        if self.debug:
+            problems.append("debug must be false in production")
+        return problems
+
 
 settings = Settings()
+

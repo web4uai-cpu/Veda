@@ -90,17 +90,28 @@ def _extract_citations(text: str) -> list[str]:
     return list(dict.fromkeys(re.findall(r'\[([A-Z][A-Za-z0-9.]+)\]', text)))
 
 
+_llm_client: AsyncOpenAI | None = None
+
+
+def _get_llm_client() -> AsyncOpenAI:
+    """Shared OpenRouter client — reuses HTTP connections across calls."""
+    global _llm_client
+    if _llm_client is None:
+        _llm_client = AsyncOpenAI(
+            api_key=settings.openrouter_api_key,
+            base_url=settings.openrouter_base_url,
+            timeout=25.0,
+        )
+    return _llm_client
+
+
 async def _call_llm(
     system_prompt: str,
     user_message: str,
     model: str,
 ) -> RLMResult:
     """Call the LLM via OpenRouter."""
-    client = AsyncOpenAI(
-        api_key=settings.openrouter_api_key,
-        base_url=settings.openrouter_base_url,
-        timeout=25.0,
-    )
+    client = _get_llm_client()
 
     started = time.perf_counter()
     response = await client.chat.completions.create(

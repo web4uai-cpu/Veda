@@ -44,9 +44,16 @@ def _classify_path(path: str) -> str:
 
 
 def _get_client_id(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    from config import settings
+
+    # Only trust X-Forwarded-For when explicitly enabled (behind a proxy that
+    # strips/sets it, e.g. Railway/Vercel). Otherwise it is client-spoofable
+    # and would allow trivial rate-limit bypass.
+    if settings.trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            # Rightmost hop is the one appended by the trusted proxy.
+            return forwarded.split(",")[-1].strip()
     if request.client:
         return request.client.host
     return "unknown"
@@ -86,8 +93,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             remaining = max(0, max_requests - count)
             if count > max_requests:
                 allowed = False
-        except Exception:
-            pass
+        except Exception as e:
+            # Fail open so Redis outages don't take down the API, but never
+            # silently — this disables rate limiting for the request.
+            logger.warning("Rate limiter unavailable (failing open): %s", e)
 
         if not allowed:
             return JSONResponse(

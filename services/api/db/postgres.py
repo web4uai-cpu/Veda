@@ -70,6 +70,12 @@ async def execute(query: str, *args: Any) -> str:
         return await conn.execute(query, *args)
 
 
+async def executemany(query: str, args_list: list[tuple]) -> None:
+    """Execute a query for each tuple of args in a single round trip batch."""
+    async with get_connection() as conn:
+        await conn.executemany(query, args_list)
+
+
 async def fetch(query: str, *args: Any) -> list[asyncpg.Record]:
     """Execute a query and return all rows."""
     async with get_connection() as conn:

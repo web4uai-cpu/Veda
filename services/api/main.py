@@ -78,6 +78,15 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 60)
 
     # --- Environment audit ---
+    prod_problems = settings.validate_production()
+    if prod_problems:
+        for problem in prod_problems:
+            logger.critical("PRODUCTION MISCONFIGURATION: %s", problem)
+        raise RuntimeError(
+            "Refusing to start in production with insecure configuration: "
+            + "; ".join(prod_problems)
+        )
+
     if not settings.openrouter_api_key:
         logger.warning("OPENROUTER_API_KEY not set — LLM answers disabled")
     if not settings.openai_api_key:

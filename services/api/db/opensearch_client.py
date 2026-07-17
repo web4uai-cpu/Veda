@@ -42,7 +42,9 @@ async def init_opensearch() -> AsyncOpenSearch:
         hosts=[{"host": host, "port": port}],
         http_compress=True,
         use_ssl=(scheme == "https"),
-        verify_certs=False,  # Local dev — no TLS verification
+        # Verify TLS certs whenever the endpoint is HTTPS (production);
+        # plain HTTP local dev is unaffected.
+        verify_certs=(scheme == "https"),
         ssl_show_warn=False,
         timeout=5,
     )

@@ -43,10 +43,13 @@ async def get_related_concepts(
 
 
 @router.get("/schools")
-async def list_schools():
-    """List all philosophical schools."""
-    results = await graph_service.list_schools()
-    return {"schools": results, "total": len(results)}
+async def list_schools(
+    limit: int = Query(100, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """List philosophical schools (paginated)."""
+    results = await graph_service.list_schools(limit, offset)
+    return {"schools": results, "total": len(results), "limit": limit, "offset": offset}
 
 
 @router.get("/schools/{slug}")
@@ -58,10 +61,12 @@ async def get_school(slug: str):
 @router.get("/persons")
 async def list_persons(
     person_type: str | None = Query(None, description="Filter by type"),
+    limit: int = Query(100, ge=1, le=200),
+    offset: int = Query(0, ge=0),
 ):
-    """List key persons in the knowledge graph."""
-    results = await graph_service.list_persons(person_type)
-    return {"persons": results, "total": len(results)}
+    """List key persons in the knowledge graph (paginated)."""
+    results = await graph_service.list_persons(person_type, limit, offset)
+    return {"persons": results, "total": len(results), "limit": limit, "offset": offset}
 
 
 @router.get("/stats")

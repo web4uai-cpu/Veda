@@ -128,7 +128,7 @@ async def get_related_concepts(slug: str, depth: int, limit: int) -> dict:
     return {"source": slug, "depth": depth, "related": results, "total": len(results)}
 
 
-async def list_schools() -> list[dict]:
+async def list_schools(limit: int = 100, offset: int = 0) -> list[dict]:
     return await read_query(
         """
         MATCH (s:School)
@@ -139,7 +139,9 @@ async def list_schools() -> list[dict]:
                s.sanskrit_name AS sanskrit_name, s.summary AS summary,
                concept_count, collect(p.name) AS teachers
         ORDER BY concept_count DESC
-        """
+        SKIP $offset LIMIT $limit
+        """,
+        {"offset": offset, "limit": limit},
     )
 
 
@@ -190,7 +192,9 @@ async def get_school(slug: str) -> dict:
     }
 
 
-async def list_persons(person_type: str | None) -> list[dict]:
+async def list_persons(
+    person_type: str | None, limit: int = 100, offset: int = 0,
+) -> list[dict]:
     if person_type:
         return await read_query(
             """
@@ -200,8 +204,9 @@ async def list_persons(person_type: str | None) -> list[dict]:
                    p.type AS type, p.period AS period, p.description AS description,
                    collect(s.name) AS schools
             ORDER BY p.name
+            SKIP $offset LIMIT $limit
             """,
-            {"type": person_type},
+            {"type": person_type, "offset": offset, "limit": limit},
         )
     return await read_query(
         """
@@ -211,7 +216,9 @@ async def list_persons(person_type: str | None) -> list[dict]:
                p.type AS type, p.period AS period, p.description AS description,
                collect(s.name) AS schools
         ORDER BY p.name
-        """
+        SKIP $offset LIMIT $limit
+        """,
+        {"offset": offset, "limit": limit},
     )
 
 

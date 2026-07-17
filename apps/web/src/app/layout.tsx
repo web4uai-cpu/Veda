@@ -1,6 +1,29 @@
 import type { Metadata, Viewport } from 'next';
+import { Inter, Noto_Sans_Devanagari, Cormorant_Garamond } from 'next/font/google';
 import './globals.css';
 import { LayoutClient } from './layout-client';
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-inter',
+  display: 'swap',
+});
+
+const notoDevanagari = Noto_Sans_Devanagari({
+  subsets: ['devanagari', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-devanagari',
+  display: 'swap',
+});
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-serif',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -47,7 +70,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${inter.variable} ${notoDevanagari.variable} ${cormorant.variable}`}
+    >
       <body className="min-h-screen antialiased">
         <LayoutClient>{children}</LayoutClient>
       </body>

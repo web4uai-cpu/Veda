@@ -174,4 +174,4 @@ async def test_index_all_orchestrates(monkeypatch):
 async def test_indexing_requires_admin(app_client, mock_all_db, monkeypatch):
     monkeypatch.setattr("config.settings.admin_api_key", "test-secret")
     resp = await app_client.post("/api/v1/admin/indexing/corpus")
-    assert resp.status_code == 403
+    assert resp.status_code == 401

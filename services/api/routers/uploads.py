@@ -7,7 +7,7 @@ All endpoints require X-Admin-Key header authentication.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, Query, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, Query, Request, UploadFile
 
 from core.auth import require_admin
 from core.errors import NotFoundError, ValidationError
@@ -74,15 +74,32 @@ async def get_upload(upload_id: str, request: Request):
 
 
 @router.post("/{upload_id}/process")
-async def trigger_processing(upload_id: str, request: Request):
-    """Trigger PDF text extraction and chunking."""
+async def trigger_processing(
+    upload_id: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    background: bool = Query(False, description="Process asynchronously and return immediately"),
+):
+    """Trigger PDF text extraction and chunking.
+
+    With ?background=true the request returns immediately with status
+    'processing'; poll GET /{upload_id} for completion. Recommended for
+    large PDFs so the HTTP request doesn't time out.
+    """
     await require_admin(request)
+
+    try:
+        upload = await upload_service.get_upload(upload_id)
+    except ValueError:
+        raise NotFoundError("Upload", upload_id)
+
+    if background:
+        background_tasks.add_task(upload_service.process_upload, upload_id)
+        return {**upload, "status": "processing"}
 
     try:
         return await upload_service.process_upload(upload_id)
     except ValueError as e:
-        if "not found" in str(e).lower():
-            raise NotFoundError("Upload", upload_id)
         raise ValidationError(str(e))
 
 

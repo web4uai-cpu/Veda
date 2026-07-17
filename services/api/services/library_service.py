@@ -18,13 +18,20 @@ from core.errors import NotFoundError, ConflictError
 # Bookmarks
 # ---------------------------------------------------------------------------
 
-async def list_bookmarks(user_id: str) -> tuple[list[dict], int]:
+async def list_bookmarks(
+    user_id: str, page: int = 1, per_page: int = 50,
+) -> tuple[list[dict], int]:
     rows = await postgres.fetch(
-        "SELECT * FROM bookmarks WHERE user_id = $1 ORDER BY created_at DESC",
-        user_id,
+        """
+        SELECT * FROM bookmarks WHERE user_id = $1
+        ORDER BY created_at DESC LIMIT $2 OFFSET $3
+        """,
+        user_id, per_page, (page - 1) * per_page,
     )
-    result = [dict(r) for r in rows]
-    return result, len(result)
+    total = await postgres.fetchval(
+        "SELECT COUNT(*) FROM bookmarks WHERE user_id = $1", user_id,
+    )
+    return [dict(r) for r in rows], total or 0
 
 
 async def create_bookmark(user_id: str, target_type: str, target_id: str) -> dict:
@@ -58,24 +65,33 @@ async def delete_bookmark(user_id: str, bookmark_id: str) -> None:
 # Notes
 # ---------------------------------------------------------------------------
 
-async def list_notes(user_id: str, search: str | None = None) -> tuple[list[dict], int]:
+async def list_notes(
+    user_id: str, search: str | None = None, page: int = 1, per_page: int = 50,
+) -> tuple[list[dict], int]:
+    offset = (page - 1) * per_page
     if search:
         q = f"%{search}%"
         rows = await postgres.fetch(
             """
             SELECT * FROM notes
             WHERE user_id = $1 AND (title ILIKE $2 OR content ILIKE $2)
-            ORDER BY updated_at DESC
+            ORDER BY updated_at DESC LIMIT $3 OFFSET $4
             """,
+            user_id, q, per_page, offset,
+        )
+        total = await postgres.fetchval(
+            "SELECT COUNT(*) FROM notes WHERE user_id = $1 AND (title ILIKE $2 OR content ILIKE $2)",
             user_id, q,
         )
     else:
         rows = await postgres.fetch(
-            "SELECT * FROM notes WHERE user_id = $1 ORDER BY updated_at DESC",
-            user_id,
+            "SELECT * FROM notes WHERE user_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3",
+            user_id, per_page, offset,
         )
-    result = [_fix_tags(dict(r)) for r in rows]
-    return result, len(result)
+        total = await postgres.fetchval(
+            "SELECT COUNT(*) FROM notes WHERE user_id = $1", user_id,
+        )
+    return [_fix_tags(dict(r)) for r in rows], total or 0
 
 
 async def create_note(
@@ -145,7 +161,9 @@ def _fix_tags(row: dict) -> dict:
 # Collections
 # ---------------------------------------------------------------------------
 
-async def list_collections(user_id: str) -> tuple[list[dict], int]:
+async def list_collections(
+    user_id: str, page: int = 1, per_page: int = 50,
+) -> tuple[list[dict], int]:
     rows = await postgres.fetch(
         """
         SELECT c.*,
@@ -158,20 +176,33 @@ async def list_collections(user_id: str) -> tuple[list[dict], int]:
         ) ci ON ci.collection_id = c.id
         WHERE c.user_id = $1
         ORDER BY c.created_at DESC
+        LIMIT $2 OFFSET $3
         """,
-        user_id,
+        user_id, per_page, (page - 1) * per_page,
     )
-    collections = []
-    for r in rows:
-        col = dict(r)
-        # Fetch items for each collection
-        items = await postgres.fetch(
-            "SELECT * FROM collection_items WHERE collection_id = $1 ORDER BY added_at DESC",
-            col["id"],
+    total = await postgres.fetchval(
+        "SELECT COUNT(*) FROM collections WHERE user_id = $1", user_id,
+    )
+    collections = [dict(r) for r in rows]
+
+    # Fetch items for all page collections in one query (avoids N+1).
+    if collections:
+        col_ids = [c["id"] for c in collections]
+        item_rows = await postgres.fetch(
+            """
+            SELECT * FROM collection_items
+            WHERE collection_id = ANY($1::text[])
+            ORDER BY added_at DESC
+            """,
+            col_ids,
         )
-        col["items"] = [dict(i) for i in items]
-        collections.append(col)
-    return collections, len(collections)
+        items_by_col: dict[str, list[dict]] = {cid: [] for cid in col_ids}
+        for item in item_rows:
+            items_by_col[item["collection_id"]].append(dict(item))
+        for col in collections:
+            col["items"] = items_by_col.get(col["id"], [])
+
+    return collections, total or 0
 
 
 async def create_collection(
@@ -293,7 +324,9 @@ async def remove_collection_item(
 # Uploads (user-facing, read-only)
 # ---------------------------------------------------------------------------
 
-async def list_user_uploads(user_id: str) -> tuple[list[dict], int]:
+async def list_user_uploads(
+    user_id: str, page: int = 1, per_page: int = 50,
+) -> tuple[list[dict], int]:
     rows = await postgres.fetch(
         """
         SELECT u.*,
@@ -306,28 +339,36 @@ async def list_user_uploads(user_id: str) -> tuple[list[dict], int]:
         ) ch ON ch.upload_id = u.id
         WHERE u.user_id = $1
         ORDER BY u.uploaded_at DESC
+        LIMIT $2 OFFSET $3
         """,
-        user_id,
+        user_id, per_page, (page - 1) * per_page,
     )
-    result = [_fix_metadata(dict(r)) for r in rows]
-    return result, len(result)
+    total = await postgres.fetchval(
+        "SELECT COUNT(*) FROM user_uploads WHERE user_id = $1", user_id,
+    )
+    return [_fix_metadata(dict(r)) for r in rows], total or 0
 
 
 # ---------------------------------------------------------------------------
 # Research Reports (user-facing, read-only)
 # ---------------------------------------------------------------------------
 
-async def list_user_reports(user_id: str) -> tuple[list[dict], int]:
+async def list_user_reports(
+    user_id: str, page: int = 1, per_page: int = 50,
+) -> tuple[list[dict], int]:
     rows = await postgres.fetch(
         """
         SELECT * FROM research_reports
         WHERE user_id = $1
         ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
         """,
-        user_id,
+        user_id, per_page, (page - 1) * per_page,
     )
-    result = [_fix_metadata(dict(r)) for r in rows]
-    return result, len(result)
+    total = await postgres.fetchval(
+        "SELECT COUNT(*) FROM research_reports WHERE user_id = $1", user_id,
+    )
+    return [_fix_metadata(dict(r)) for r in rows], total or 0
 
 
 def _fix_metadata(row: dict) -> dict:

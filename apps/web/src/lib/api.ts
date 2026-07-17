@@ -11,6 +11,14 @@
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 
+if (!process.env.NEXT_PUBLIC_API_URL && process.env.NODE_ENV === 'production') {
+  // A misconfigured deploy would otherwise silently call localhost.
+  console.error(
+    '[VEDA] NEXT_PUBLIC_API_URL is not set — API requests will target localhost:8000. ' +
+      'Set NEXT_PUBLIC_API_URL in the deployment environment.'
+  );
+}
+
 // =============================================================================
 // TYPES (mirrors backend Pydantic models)
 // =============================================================================

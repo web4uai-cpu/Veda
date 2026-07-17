@@ -15,7 +15,7 @@ import pytest
 async def test_list_uploads_no_key_rejected(app_client, mock_all_db, monkeypatch):
     monkeypatch.setattr("config.settings.admin_api_key", "test-secret")
     resp = await app_client.get("/api/v1/admin/uploads")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 async def test_list_uploads_wrong_key_rejected(app_client, mock_all_db, monkeypatch):
@@ -24,7 +24,7 @@ async def test_list_uploads_wrong_key_rejected(app_client, mock_all_db, monkeypa
         "/api/v1/admin/uploads",
         headers={"X-Admin-Key": "wrong-key"},
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 async def test_list_uploads_empty_server_key_rejected(app_client, mock_all_db, monkeypatch):
@@ -33,13 +33,13 @@ async def test_list_uploads_empty_server_key_rejected(app_client, mock_all_db, m
         "/api/v1/admin/uploads",
         headers={"X-Admin-Key": "anything"},
     )
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 async def test_get_upload_requires_admin(app_client, mock_all_db, monkeypatch):
     monkeypatch.setattr("config.settings.admin_api_key", "test-secret")
     resp = await app_client.get("/api/v1/admin/uploads/upl_01")
-    assert resp.status_code == 403
+    assert resp.status_code == 401
 
 
 # ============================================================================

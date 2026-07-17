@@ -88,8 +88,11 @@ async def generate_embeddings(
                     model=settings.embedding_model,
                     dimensions=settings.embedding_dimensions,
                 )
-                for item in result.data:
-                    all_embeddings[start + item.index] = item.embedding
+                for i, item in enumerate(result.data):
+                    # Gemini's OpenAI-compat endpoint returns index=null —
+                    # fall back to response order (spec-guaranteed).
+                    idx = item.index if item.index is not None else i
+                    all_embeddings[start + idx] = item.embedding
                 break
             except Exception as e:
                 msg = str(e)

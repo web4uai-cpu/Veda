@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "VEDA",
+    "slug": "veda",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "veda",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0F1A",
+    "newArchEnabled": false,
+    "splash": {
+      "backgroundColor": "#0B0F1A",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.veda.app",
+      "supportsTablet": true,
+      "infoPlist": {
+        "UIBackgroundModes": []
+      }
+    },
+    "android": {
+      "package": "com.veda.app",
+      "softwareKeyboardLayoutMode": "pan",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F1A"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-splash-screen"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

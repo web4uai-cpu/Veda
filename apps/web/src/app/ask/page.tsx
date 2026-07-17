@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState, type JSX } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem } from '@/components/animations';
@@ -22,7 +22,7 @@ const MODES = [
   { label: 'Research', desc: 'Full report' },
 ];
 
-export default function AskPage() {
+export default function AskPage(): JSX.Element {
   return (
     <Suspense fallback={
       <div className="flex h-[calc(100vh-64px)] items-center justify-center lg:h-screen">

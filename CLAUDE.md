@@ -51,8 +51,10 @@ Knowledge Graph (Neo4j) → Retrieval (Qdrant + OpenSearch) → Citation (Postgr
 ```
 veda/
 ├── apps/web/              → Next.js 15 main application
+├── apps/mobile/           → Expo SDK 52 React Native app (Android + iOS, expo-router)
 ├── services/api/          → FastAPI gateway (Python)
 ├── packages/types/        → @veda/types — shared TypeScript types
+├── packages/api-client/   → @veda/api-client — framework-agnostic API client (web + mobile)
 ├── packages/design-tokens/ → @veda/design-tokens — colors, fonts, spacing
 ├── docs/                  → Architecture & specification documents
 ├── infrastructure/        → Terraform, Kubernetes, Docker

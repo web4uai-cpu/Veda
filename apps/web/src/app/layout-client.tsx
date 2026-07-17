@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { SplashScreen } from '@/components/splash/SplashScreen';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 import { UserMenu } from '@/components/auth/UserMenu';
 
 const NAV_ITEMS = [
@@ -30,6 +31,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   return (
+    <QueryProvider>
     <AuthProvider>
       {/* Splash Screen */}
       {!splashDone && (
@@ -200,5 +202,6 @@ export function LayoutClient({ children }: { children: ReactNode }) {
         })}
       </nav>
     </AuthProvider>
+    </QueryProvider>
   );
 }

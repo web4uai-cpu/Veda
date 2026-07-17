@@ -1,16 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-  api,
-  type GraphConcept,
-  type School,
-  type Person,
-  type GraphStats,
-  type ConceptDetail,
-} from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
+import { api, type GraphStats, type ConceptDetail } from '@/lib/api';
 import type { GraphNode, GraphEdge } from '@/components/three/GraphUniverse';
 
 const GraphUniverse = dynamic(() => import('@/components/three/GraphUniverse'), { ssr: false });
@@ -22,130 +16,138 @@ const LEGEND = [
   { label: 'Person', color: '#34d399' },
 ];
 
+interface GraphData {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  stats: GraphStats | null;
+}
+
+async function fetchGraphData(): Promise<GraphData> {
+  const [conceptsRes, schoolsRes, personsRes, statsRes] = await Promise.all([
+    api.getConcepts(undefined, 100).catch(() => ({ concepts: [], total: 0 })),
+    api.getSchools().catch(() => ({ schools: [], total: 0 })),
+    api.getPersons().catch(() => ({ persons: [], total: 0 })),
+    api.getGraphStats().catch(() => null),
+  ]);
+
+  const graphNodes: GraphNode[] = [];
+  const graphEdges: GraphEdge[] = [];
+  const nodeIds = new Set<string>();
+
+  for (const c of conceptsRes.concepts) {
+    graphNodes.push({
+      id: c.slug,
+      name: c.name,
+      type: 'concept',
+      sanskrit_name: c.sanskrit_name,
+      summary: c.summary,
+      category: c.category,
+      connection_count: c.connection_count,
+    });
+    nodeIds.add(c.slug);
+  }
+
+  for (const s of schoolsRes.schools) {
+    graphNodes.push({
+      id: s.slug,
+      name: s.name,
+      type: 'school',
+      sanskrit_name: s.sanskrit_name,
+      summary: s.summary,
+    });
+    nodeIds.add(s.slug);
+  }
+
+  for (const p of personsRes.persons) {
+    const slug = p.name.toLowerCase().replace(/\s+/g, '-');
+    graphNodes.push({
+      id: slug,
+      name: p.name,
+      type: 'person',
+      sanskrit_name: p.sanskrit_name,
+      summary: p.description,
+      category: p.type,
+    });
+    nodeIds.add(slug);
+
+    if (p.schools) {
+      for (const schoolName of p.schools) {
+        const schoolSlug = schoolName.toLowerCase().replace(/\s+/g, '-');
+        if (nodeIds.has(schoolSlug)) {
+          graphEdges.push({ from: slug, to: schoolSlug, relationship: 'TEACHES' });
+        }
+      }
+    }
+  }
+
+  const edgeSet = new Set<string>();
+  const addEdge = (from: string, to: string, rel: string) => {
+    const key = [from, to].sort().join('::');
+    if (!edgeSet.has(key) && nodeIds.has(from) && nodeIds.has(to)) {
+      edgeSet.add(key);
+      graphEdges.push({ from, to, relationship: rel });
+    }
+  };
+
+  const topConcepts = conceptsRes.concepts
+    .filter((c) => (c.connection_count ?? 0) > 0)
+    .sort((a, b) => (b.connection_count ?? 0) - (a.connection_count ?? 0))
+    .slice(0, 20);
+
+  // Fetch concept relations and school details in one parallel batch
+  // (the school loop was previously sequential — an N+1 waterfall).
+  const [relatedResults, schoolDetails] = await Promise.all([
+    Promise.all(
+      topConcepts.map((c) =>
+        api.getRelatedConcepts(c.slug, 1, 10).catch(() => ({ source: c.slug, related: [], depth: 1, total: 0 })),
+      ),
+    ),
+    Promise.all(
+      schoolsRes.schools.map(async (s) => {
+        const detail = await api.getSchool(s.slug).catch(() => null);
+        return detail ? { slug: s.slug, detail } : null;
+      }),
+    ),
+  ]);
+
+  for (const res of relatedResults) {
+    for (const rel of res.related) {
+      addEdge(res.source, rel.slug, 'RELATED_TO');
+    }
+  }
+
+  for (const entry of schoolDetails) {
+    if (!entry) continue;
+    for (const concept of entry.detail.supported_concepts) {
+      addEdge(entry.slug, concept.slug, 'SUPPORTS');
+    }
+  }
+
+  return { nodes: graphNodes, edges: graphEdges, stats: statsRes };
+}
+
 export default function GraphPage() {
-  const [nodes, setNodes] = useState<GraphNode[]>([]);
-  const [edges, setEdges] = useState<GraphEdge[]>([]);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [highlightIds, setHighlightIds] = useState<Set<string>>(new Set());
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [nodeDetail, setNodeDetail] = useState<ConceptDetail | null>(null);
-  const [stats, setStats] = useState<GraphStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadGraph();
-  }, []);
+  const {
+    data,
+    isLoading: loading,
+    error: queryError,
+    refetch: loadGraph,
+  } = useQuery({ queryKey: ['graph', 'universe'], queryFn: fetchGraphData });
 
-  async function loadGraph() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [conceptsRes, schoolsRes, personsRes, statsRes] = await Promise.all([
-        api.getConcepts(undefined, 100).catch(() => ({ concepts: [], total: 0 })),
-        api.getSchools().catch(() => ({ schools: [], total: 0 })),
-        api.getPersons().catch(() => ({ persons: [], total: 0 })),
-        api.getGraphStats().catch(() => null),
-      ]);
-
-      const graphNodes: GraphNode[] = [];
-      const graphEdges: GraphEdge[] = [];
-      const nodeIds = new Set<string>();
-
-      for (const c of conceptsRes.concepts) {
-        graphNodes.push({
-          id: c.slug,
-          name: c.name,
-          type: 'concept',
-          sanskrit_name: c.sanskrit_name,
-          summary: c.summary,
-          category: c.category,
-          connection_count: c.connection_count,
-        });
-        nodeIds.add(c.slug);
-      }
-
-      for (const s of schoolsRes.schools) {
-        graphNodes.push({
-          id: s.slug,
-          name: s.name,
-          type: 'school',
-          sanskrit_name: s.sanskrit_name,
-          summary: s.summary,
-        });
-        nodeIds.add(s.slug);
-      }
-
-      for (const p of personsRes.persons) {
-        const slug = p.name.toLowerCase().replace(/\s+/g, '-');
-        graphNodes.push({
-          id: slug,
-          name: p.name,
-          type: 'person',
-          sanskrit_name: p.sanskrit_name,
-          summary: p.description,
-          category: p.type,
-        });
-        nodeIds.add(slug);
-
-        if (p.schools) {
-          for (const schoolName of p.schools) {
-            const schoolSlug = schoolName.toLowerCase().replace(/\s+/g, '-');
-            if (nodeIds.has(schoolSlug)) {
-              graphEdges.push({ from: slug, to: schoolSlug, relationship: 'TEACHES' });
-            }
-          }
-        }
-      }
-
-      const edgeSet = new Set<string>();
-      const addEdge = (from: string, to: string, rel: string) => {
-        const key = [from, to].sort().join('::');
-        if (!edgeSet.has(key) && nodeIds.has(from) && nodeIds.has(to)) {
-          edgeSet.add(key);
-          graphEdges.push({ from, to, relationship: rel });
-        }
-      };
-
-      const topConcepts = conceptsRes.concepts
-        .filter((c) => (c.connection_count ?? 0) > 0)
-        .sort((a, b) => (b.connection_count ?? 0) - (a.connection_count ?? 0))
-        .slice(0, 20);
-
-      const relatedResults = await Promise.all(
-        topConcepts.map((c) =>
-          api.getRelatedConcepts(c.slug, 1, 10).catch(() => ({ source: c.slug, related: [], depth: 1, total: 0 })),
-        ),
-      );
-
-      for (const res of relatedResults) {
-        for (const rel of res.related) {
-          addEdge(res.source, rel.slug, 'RELATED_TO');
-        }
-      }
-
-      for (const s of schoolsRes.schools) {
-        try {
-          const detail = await api.getSchool(s.slug);
-          for (const concept of detail.supported_concepts) {
-            addEdge(s.slug, concept.slug, 'SUPPORTS');
-          }
-        } catch {
-          // school detail unavailable
-        }
-      }
-
-      setNodes(graphNodes);
-      setEdges(graphEdges);
-      if (statsRes) setStats(statsRes);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load graph data');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const nodes = data?.nodes ?? [];
+  const edges = data?.edges ?? [];
+  const stats = data?.stats ?? null;
+  const error = queryError
+    ? queryError instanceof Error
+      ? queryError.message
+      : 'Failed to load graph data'
+    : null;
 
   const handleSearch = useCallback(async () => {
     const q = searchQuery.trim();
@@ -270,7 +272,7 @@ export default function GraphPage() {
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3">
             <p className="text-sm text-red-400">{error}</p>
             <button
-              onClick={loadGraph}
+              onClick={() => loadGraph()}
               className="rounded-lg border border-[hsl(var(--border))] px-4 py-2 text-sm text-[hsl(var(--foreground))] glass hover:border-[hsl(var(--primary))]/30"
             >
               Retry

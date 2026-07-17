@@ -1,17 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ScrollReveal, TextReveal } from '@/components/animations';
 import { useAuthContext } from '@/components/providers/AuthProvider';
-import {
-  api,
-  type Bookmark,
-  type Note,
-  type Collection,
-  type Upload,
-  type Report,
-} from '@/lib/api';
+import { api } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
 // Tab config
@@ -79,18 +73,8 @@ function TabSkeleton({ count = 3 }: { count?: number }) {
 
 export default function LibraryPage() {
   const { user, loading: authLoading } = useAuthContext();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState(0);
-
-  // Data states
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [uploads, setUploads] = useState<Upload[]>([]);
-  const [reports, setReports] = useState<Report[]>([]);
-
-  // Loading states
-  const [tabLoading, setTabLoading] = useState(false);
-  const [tabError, setTabError] = useState<string | null>(null);
 
   // Note form
   const [noteForm, setNoteForm] = useState<{
@@ -115,49 +99,52 @@ export default function LibraryPage() {
   // Note search
   const [noteSearch, setNoteSearch] = useState('');
 
-  // Fetch data for the active tab
-  const fetchTab = useCallback(async (tab: number) => {
-    if (!user) return;
-    setTabLoading(true);
-    setTabError(null);
-    try {
-      switch (tab) {
-        case 0: {
-          const res = await api.getBookmarks();
-          setBookmarks(res.bookmarks);
-          break;
-        }
-        case 1: {
-          const res = await api.getNotes(noteSearch || undefined);
-          setNotes(res.notes);
-          break;
-        }
-        case 2: {
-          const res = await api.getCollections();
-          setCollections(res.collections);
-          break;
-        }
-        case 3: {
-          const res = await api.getMyUploads();
-          setUploads(res.uploads);
-          break;
-        }
-        case 4: {
-          const res = await api.getMyReports();
-          setReports(res.reports);
-          break;
-        }
-      }
-    } catch (err) {
-      setTabError(err instanceof Error ? err.message : 'Failed to load data');
-    } finally {
-      setTabLoading(false);
-    }
-  }, [user, noteSearch]);
+  // Per-tab server state — cached by TanStack Query, refetched on
+  // invalidation after mutations. Only the active tab's query runs.
+  const signedIn = !!user;
+  const bookmarksQ = useQuery({
+    queryKey: ['library', 'bookmarks'],
+    queryFn: () => api.getBookmarks(),
+    enabled: signedIn && activeTab === 0,
+  });
+  const notesQ = useQuery({
+    queryKey: ['library', 'notes', noteSearch],
+    queryFn: () => api.getNotes(noteSearch || undefined),
+    enabled: signedIn && activeTab === 1,
+  });
+  const collectionsQ = useQuery({
+    queryKey: ['library', 'collections'],
+    queryFn: () => api.getCollections(),
+    enabled: signedIn && activeTab === 2,
+  });
+  const uploadsQ = useQuery({
+    queryKey: ['library', 'uploads'],
+    queryFn: () => api.getMyUploads(),
+    enabled: signedIn && activeTab === 3,
+  });
+  const reportsQ = useQuery({
+    queryKey: ['library', 'reports'],
+    queryFn: () => api.getMyReports(),
+    enabled: signedIn && activeTab === 4,
+  });
 
-  useEffect(() => {
-    if (user) fetchTab(activeTab);
-  }, [activeTab, user, fetchTab]);
+  const bookmarks = bookmarksQ.data?.bookmarks ?? [];
+  const notes = notesQ.data?.notes ?? [];
+  const collections = collectionsQ.data?.collections ?? [];
+  const uploads = uploadsQ.data?.uploads ?? [];
+  const reports = reportsQ.data?.reports ?? [];
+
+  const tabQueries = [bookmarksQ, notesQ, collectionsQ, uploadsQ, reportsQ] as const;
+  const activeQuery = tabQueries[activeTab] ?? bookmarksQ;
+  const tabLoading = activeQuery.isLoading;
+  const tabError = activeQuery.error
+    ? activeQuery.error instanceof Error
+      ? activeQuery.error.message
+      : 'Failed to load data'
+    : null;
+
+  const invalidate = (key: string) =>
+    queryClient.invalidateQueries({ queryKey: ['library', key] });
 
   // --- Auth gate ---
   if (authLoading) {
@@ -197,64 +184,56 @@ export default function LibraryPage() {
 
   async function handleDeleteBookmark(id: string) {
     await api.deleteBookmark(id);
-    setBookmarks((prev) => prev.filter((b) => b.id !== id));
+    await invalidate('bookmarks');
   }
 
   async function handleSaveNote() {
     if (!noteForm.title.trim() || !noteForm.content.trim()) return;
     const tags = noteForm.tags.split(',').map((t) => t.trim()).filter(Boolean);
     if (noteForm.editId) {
-      const updated = await api.updateNote(noteForm.editId, {
+      await api.updateNote(noteForm.editId, {
         title: noteForm.title,
         content: noteForm.content,
         tags,
       });
-      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
     } else {
-      const created = await api.createNote({ title: noteForm.title, content: noteForm.content, tags });
-      setNotes((prev) => [created, ...prev]);
+      await api.createNote({ title: noteForm.title, content: noteForm.content, tags });
     }
+    await invalidate('notes');
     setNoteForm({ open: false, editId: null, title: '', content: '', tags: '' });
   }
 
   async function handleDeleteNote(id: string) {
     await api.deleteNote(id);
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    await invalidate('notes');
   }
 
   async function handleSaveCollection() {
     if (!colForm.name.trim()) return;
     if (colForm.editId) {
-      const updated = await api.updateCollection(colForm.editId, {
+      await api.updateCollection(colForm.editId, {
         name: colForm.name,
         description: colForm.description || undefined,
       });
-      setCollections((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
     } else {
-      const created = await api.createCollection({
+      await api.createCollection({
         name: colForm.name,
         description: colForm.description || undefined,
       });
-      setCollections((prev) => [created, ...prev]);
     }
+    await invalidate('collections');
     setColForm({ open: false, editId: null, name: '', description: '' });
   }
 
   async function handleDeleteCollection(id: string) {
     await api.deleteCollection(id);
-    setCollections((prev) => prev.filter((c) => c.id !== id));
+    await invalidate('collections');
     if (expandedCol === id) setExpandedCol(null);
   }
 
   async function handleRemoveCollectionItem(colId: string, itemId: string) {
     await api.removeCollectionItem(colId, itemId);
-    setCollections((prev) =>
-      prev.map((c) =>
-        c.id === colId
-          ? { ...c, item_count: c.item_count - 1, items: c.items.filter((i) => i.id !== itemId) }
-          : c,
-      ),
-    );
+    await invalidate('collections');
   }
 
   return (
@@ -309,7 +288,7 @@ export default function LibraryPage() {
       {tabError && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-200">
           {tabError}
-          <button onClick={() => fetchTab(activeTab)} className="ml-3 text-[hsl(var(--primary))] hover:underline">
+          <button onClick={() => activeQuery.refetch()} className="ml-3 text-[hsl(var(--primary))] hover:underline">
             Retry
           </button>
         </div>
@@ -375,7 +354,7 @@ export default function LibraryPage() {
                         type="text"
                         value={noteSearch}
                         onChange={(e) => setNoteSearch(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === 'Enter') fetchTab(1); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') notesQ.refetch(); }}
                         placeholder="Search notes..."
                         className="w-full rounded-lg border border-[hsl(var(--border))] bg-transparent py-2 pl-9 pr-3 text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--primary))]/40 focus:outline-none"
                       />

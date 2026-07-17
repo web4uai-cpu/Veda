@@ -1,7 +1,11 @@
 """
 VEDA — Embedding Service
 ============================
-Generates vector embeddings via OpenAI text-embedding-3-large.
+Generates vector embeddings through any OpenAI-compatible embeddings API.
+
+Default: OpenAI text-embedding-3-large. Set EMBEDDING_BASE_URL and
+EMBEDDING_API_KEY to use another provider (e.g. Gemini's OpenAI-compat
+endpoint with model gemini-embedding-001 — also 3072 dims).
 Supports batching for bulk operations.
 """
 
@@ -19,17 +23,24 @@ logger = logging.getLogger("veda.services.embedding")
 _client: AsyncOpenAI | None = None
 
 
+def _api_key() -> str:
+    return settings.embedding_api_key or settings.openai_api_key
+
+
 def _get_client() -> AsyncOpenAI:
     global _client
     if _client is None:
-        _client = AsyncOpenAI(api_key=settings.openai_api_key)
+        _client = AsyncOpenAI(
+            api_key=_api_key(),
+            base_url=settings.embedding_base_url or None,
+        )
     return _client
 
 
 async def generate_embedding(text: str) -> list[float]:
     """Generate a single embedding vector for the given text."""
-    if not settings.openai_api_key:
-        logger.warning("OPENAI_API_KEY not set — returning empty vector")
+    if not _api_key():
+        logger.warning("No embedding API key set — returning empty vector")
         return []
 
     result = await _get_client().embeddings.create(
@@ -53,8 +64,8 @@ async def generate_embeddings(
     Returns:
         List of embedding vectors in the same order as input texts.
     """
-    if not settings.openai_api_key:
-        logger.warning("OPENAI_API_KEY not set — returning empty vectors")
+    if not _api_key():
+        logger.warning("No embedding API key set — returning empty vectors")
         return [[] for _ in texts]
 
     if not texts:

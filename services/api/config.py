@@ -61,6 +61,11 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     embedding_model: str = "text-embedding-3-large"
     embedding_dimensions: int = 3072
+    # Optional OpenAI-compatible embedding provider override
+    # (e.g. https://generativelanguage.googleapis.com/v1beta/openai/ with
+    # model gemini-embedding-001). Falls back to openai_api_key/OpenAI.
+    embedding_base_url: str = ""
+    embedding_api_key: str = ""
 
     # --- Admin ---
     admin_api_key: str = ""

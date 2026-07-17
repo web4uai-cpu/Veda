@@ -98,18 +98,38 @@ async def search_vectors(
     ]
 
 
+async def ensure_collection(collection_name: str) -> None:
+    """Create the collection (cosine, configured dimensions) if missing."""
+    from qdrant_client.models import Distance, VectorParams
+
+    client = get_client()
+    if not await client.collection_exists(collection_name):
+        await client.create_collection(
+            collection_name=collection_name,
+            vectors_config=VectorParams(
+                size=settings.embedding_dimensions,
+                distance=Distance.COSINE,
+            ),
+        )
+        logger.info(
+            "Created Qdrant collection '%s' (%d-dim, cosine)",
+            collection_name, settings.embedding_dimensions,
+        )
+
+
 async def upsert_vectors(
     collection_name: str,
     points: list[dict[str, Any]],
 ) -> None:
     """
-    Upsert vectors into a collection.
+    Upsert vectors into a collection, creating it if it doesn't exist.
 
     Args:
         collection_name: Target collection
         points: List of dicts with 'id', 'vector', and 'payload' keys
     """
     client = get_client()
+    await ensure_collection(collection_name)
     await client.upsert(
         collection_name=collection_name,
         points=[

@@ -94,8 +94,15 @@ async def trigger_processing(
         raise NotFoundError("Upload", upload_id)
 
     if background:
-        background_tasks.add_task(upload_service.process_upload, upload_id)
-        return {**upload, "status": "processing"}
+        # Prefer the ARQ worker (survives API restarts, doesn't tie up the
+        # web process); fall back to in-process BackgroundTasks if the
+        # queue is unavailable.
+        from core.queue import enqueue_process_upload
+
+        queued = await enqueue_process_upload(upload_id)
+        if not queued:
+            background_tasks.add_task(upload_service.process_upload, upload_id)
+        return {**upload, "status": "processing", "queued": queued}
 
     try:
         return await upload_service.process_upload(upload_id)

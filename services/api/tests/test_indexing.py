@@ -16,6 +16,7 @@ async def test_generate_embedding_no_api_key(monkeypatch):
     from services.embedding_service import generate_embedding
 
     monkeypatch.setattr("services.embedding_service.settings.openai_api_key", "")
+    monkeypatch.setattr("services.embedding_service.settings.embedding_api_key", "")
     result = await generate_embedding("test text")
     assert result == []
 
@@ -24,6 +25,7 @@ async def test_generate_embeddings_no_api_key(monkeypatch):
     from services.embedding_service import generate_embeddings
 
     monkeypatch.setattr("services.embedding_service.settings.openai_api_key", "")
+    monkeypatch.setattr("services.embedding_service.settings.embedding_api_key", "")
     result = await generate_embeddings(["a", "b", "c"])
     assert result == [[], [], []]
 

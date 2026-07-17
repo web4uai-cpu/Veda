@@ -158,8 +158,10 @@ Every AI-generated answer MUST include:
 
 - Phase 10: Production Hardening — Redis sliding-window rate limiting (per-endpoint: search 30/min, AI 10/min, scriptures 100/min), security headers (HSTS, X-Frame-Options, CSP), request guards (payload size, XSS/SQLi pattern blocking), in-memory metrics + GET /api/v1/health/metrics
 
+- Phase 11: Audit Remediation — 401 auth semantics + constant-time admin key, trusted-proxy rate limiting (TRUST_PROXY_HEADERS), production config validation (refuses default passwords when ENVIRONMENT=production), async offload of Firebase/PDF/token-verify blockers, batched N+1 fixes (search evidence, collections, upload chunks), pagination on library/graph lists, Prometheus GET /metrics (multiprocess-safe), ARQ worker for PDF ingestion (worker.py, `arq worker.WorkerSettings`), server-rendered scripture/concept pages with generateMetadata + JSON-LD + sitemap/robots, TanStack Query on graph/library pages, error boundaries, next/font, CI runs pytest (113 tests)
+
 ### Next Up
 - Set OPENROUTER_API_KEY + OPENAI_API_KEY in production to enable LLM answers + vector indexing
-- Deploy to production (Railway backend, Vercel frontend)
+- Deploy to production (Railway backend, Vercel frontend) — set ENVIRONMENT=production, TRUST_PROXY_HEADERS=true, NEXT_PUBLIC_SITE_URL, and run the ARQ worker alongside the API
 
 See `docs/architecture/BACKEND_ARCHITECTURE.md` for the active backend audit and build order.

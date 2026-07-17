@@ -71,23 +71,39 @@ async def generate_embeddings(
     if not texts:
         return []
 
+    import asyncio
+
     client = _get_client()
     all_embeddings: list[list[float]] = [[] for _ in texts]
 
     for start in range(0, len(texts), batch_size):
         batch = texts[start : start + batch_size]
-        try:
-            result = await client.embeddings.create(
-                input=batch,
-                model=settings.embedding_model,
-                dimensions=settings.embedding_dimensions,
-            )
-            for item in result.data:
-                all_embeddings[start + item.index] = item.embedding
-        except Exception as e:
-            logger.error("Embedding batch %d-%d failed: %s", start, start + len(batch), e)
-            if "insufficient_quota" in str(e):
-                logger.warning("OpenAI quota exhausted — skipping remaining embeddings")
+        # Free-tier providers (e.g. Gemini: 100 requests/min, one per input
+        # text) rate-limit aggressively — wait out the window and retry
+        # instead of dropping the batch.
+        for attempt in range(4):
+            try:
+                result = await client.embeddings.create(
+                    input=batch,
+                    model=settings.embedding_model,
+                    dimensions=settings.embedding_dimensions,
+                )
+                for item in result.data:
+                    all_embeddings[start + item.index] = item.embedding
+                break
+            except Exception as e:
+                msg = str(e)
+                if "insufficient_quota" in msg:
+                    logger.warning("Embedding quota exhausted (billing) — skipping remaining embeddings")
+                    return all_embeddings
+                if ("429" in msg or "RESOURCE_EXHAUSTED" in msg) and attempt < 3:
+                    logger.info(
+                        "Embedding batch %d-%d rate-limited — waiting 65s (attempt %d/3)",
+                        start, start + len(batch), attempt + 1,
+                    )
+                    await asyncio.sleep(65)
+                    continue
+                logger.error("Embedding batch %d-%d failed: %s", start, start + len(batch), e)
                 break
 
     logger.info("Generated %d embeddings (%d dimensions)", len(texts), settings.embedding_dimensions)

@@ -7,21 +7,67 @@ All endpoints require admin authentication.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Query, Request
 
 from core.auth import require_admin
 from services.indexing_service import index_all, index_upload_chunks
 from db.opensearch_client import get_client
 
 router = APIRouter(prefix="/api/v1/admin/indexing", tags=["Admin Indexing"])
+logger = logging.getLogger("veda.routers.indexing")
+
+
+async def _index_all_logged() -> None:
+    try:
+        result = await index_all()
+        logger.info("Background corpus indexing finished: %s", result)
+    except Exception as e:
+        logger.error("Background corpus indexing failed: %s", e)
 
 
 @router.post("/corpus")
-async def trigger_corpus_indexing(request: Request):
-    """Trigger full corpus re-indexing (scriptures + uploads)."""
+async def trigger_corpus_indexing(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    background: bool = Query(False, description="Run asynchronously (recommended with rate-limited embedding providers)"),
+):
+    """Trigger full corpus re-indexing (scriptures + uploads).
+
+    With ?background=true the request returns immediately; poll
+    GET /api/v1/admin/indexing/status for progress.
+    """
     await require_admin(request)
+    if background:
+        background_tasks.add_task(_index_all_logged)
+        return {"status": "started", "poll": "/api/v1/admin/indexing/status"}
     result = await index_all()
     return {"status": "completed", **result}
+
+
+@router.get("/status")
+async def indexing_status(request: Request):
+    """Report vector/document counts per store."""
+    await require_admin(request)
+
+    status: dict = {}
+    try:
+        from db.qdrant_client import get_client as get_qdrant
+        qdrant = get_qdrant()
+        count = await qdrant.count(collection_name="scripture_chunks")
+        status["qdrant_scripture_chunks"] = count.count
+    except Exception as e:
+        status["qdrant_scripture_chunks"] = f"error: {str(e)[:80]}"
+
+    try:
+        client = get_client()
+        res = await client.count(index="veda-scriptures")
+        status["opensearch_veda_scriptures"] = res.get("count", 0)
+    except Exception as e:
+        status["opensearch_veda_scriptures"] = f"error: {str(e)[:80]}"
+
+    return status
 
 
 @router.post("/uploads/{upload_id}")

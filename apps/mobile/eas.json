@@ -6,7 +6,8 @@
   "build": {
     "base": {
       "env": {
-        "EXPO_USE_COMMUNITY_AUTOLINKING": "0"
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "0",
+        "NPM_CONFIG_NODE_LINKER": "hoisted"
       }
     },
     "development": {

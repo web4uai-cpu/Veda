@@ -15,7 +15,7 @@ export default function SettingsScreen() {
   } = useSettings();
 
   return (
-    <Screen tabBarSpace={false}>
+    <Screen>
       <ScreenHeader title="Settings" left="back" />
 
       <Text variant="label" style={styles.sectionLabel}>

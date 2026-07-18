@@ -4,10 +4,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from './api';
 
-export function useScriptures(category?: string) {
+// The API caps per_page at 100 (routers/scriptures.py) — asking for more 422s.
+// The registry holds 49 scriptures, so a single page covers the corpus.
+const SCRIPTURES_PER_PAGE = 100;
+
+export function useScriptures() {
   return useQuery({
-    queryKey: ['scriptures', category ?? 'all'],
-    queryFn: () => api.getScriptures(category, 1, 200),
+    queryKey: ['scriptures', 'all'],
+    queryFn: () => api.getScriptures(undefined, 1, SCRIPTURES_PER_PAGE),
   });
 }
 
@@ -32,6 +36,21 @@ export function useVerses(scriptureId: string | undefined, chapterNumber: number
     queryKey: ['verses', scriptureId, chapterNumber],
     queryFn: () => api.getVerses(scriptureId!, chapterNumber, 1, 200),
     enabled: !!scriptureId && chapterNumber > 0,
+  });
+}
+
+/**
+ * A single verse looked up by canonical reference ("BG.2.47") — what a citation
+ * badge carries. Not every reference resolves (uploads, commentaries, malformed
+ * refs from the model), so callers must handle the error rather than retrying.
+ */
+export function useVerseByReference(reference: string | undefined) {
+  return useQuery({
+    queryKey: ['verse', reference],
+    queryFn: () => api.getVerseByReference(reference!),
+    enabled: !!reference,
+    retry: 0,
+    staleTime: 60 * 60 * 1000, // canonical text is immutable
   });
 }
 

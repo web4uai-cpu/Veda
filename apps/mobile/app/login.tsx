@@ -57,7 +57,7 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen tabBarSpace={false} scroll>
+      <Screen scroll>
         <Animated.View entering={FadeInDown.duration(400)} style={styles.header}>
           <VedaLogo size={64} />
           <Text variant="hero" style={styles.brand}>

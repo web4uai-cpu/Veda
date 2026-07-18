@@ -7,6 +7,7 @@ import { Text, Card, Screen, Button, EmptyState } from '@/components/ui';
 import { ScreenHeader } from '@/components/nav/ScreenHeader';
 import { useAuth } from '@/providers/AuthProvider';
 import { auth } from '@/lib/firebase';
+import { displayNameFor } from '@/lib/user';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -14,7 +15,7 @@ export default function ProfileScreen() {
 
   if (!user) {
     return (
-      <Screen tabBarSpace={false}>
+      <Screen>
         <ScreenHeader title="Profile" left="back" />
         <EmptyState
           emoji="🙏"
@@ -28,14 +29,14 @@ export default function ProfileScreen() {
   }
 
   return (
-    <Screen tabBarSpace={false}>
+    <Screen>
       <ScreenHeader title="Profile" left="back" />
 
       <Card style={styles.card}>
         <View style={styles.avatar}>
           <Ionicons name="person" size={34} color={theme.colors.primary} />
         </View>
-        <Text variant="heading">{user.displayName ?? 'Seeker'}</Text>
+        <Text variant="heading">{displayNameFor(user)}</Text>
         <Text variant="bodySmall">{user.email}</Text>
         <Text variant="caption">
           Member since{' '}

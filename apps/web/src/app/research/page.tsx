@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ScrollReveal, ScrollRevealItem, FloatingCard, TextReveal } from '@/components/animations';
+import { ReportRenderer } from '@/components/domain/ReportRenderer';
 import { api, type ResearchResponse, type Citation, type EvidencePacket } from '@/lib/api';
 
 // ---------------------------------------------------------------------------
@@ -63,92 +64,6 @@ const SOURCE_TYPE_STYLES: Record<string, { label: string; color: string }> = {
   UPLOAD: { label: 'Upload', color: 'bg-slate-500/15 text-slate-400' },
   AI_NOTE: { label: 'AI Note', color: 'bg-purple-500/15 text-purple-400' },
 };
-
-// ---------------------------------------------------------------------------
-// Report Renderer — parses [REFERENCE] citations, headers, bold
-// ---------------------------------------------------------------------------
-
-function renderReport(text: string): React.ReactNode[] {
-  const paragraphs = text.split(/\n\n+/);
-  const elements: React.ReactNode[] = [];
-
-  for (let pi = 0; pi < paragraphs.length; pi++) {
-    const para = paragraphs[pi]?.trim() ?? '';
-    if (!para) continue;
-
-    // Section headers: lines starting with ## or all-caps lines (>4 chars, no lowercase)
-    if (/^#{1,3}\s+/.test(para)) {
-      const headerText = para.replace(/^#{1,3}\s+/, '');
-      elements.push(
-        <h3 key={`h-${pi}`} className="mt-5 mb-2 text-base font-semibold text-[hsl(var(--foreground))]">
-          {renderInline(headerText)}
-        </h3>,
-      );
-      continue;
-    }
-
-    const firstLine = para.split('\n')[0] ?? '';
-    if (/^[A-Z][A-Z\s:]{3,}$/.test(firstLine)) {
-      const lines = para.split('\n');
-      elements.push(
-        <h3 key={`h-${pi}`} className="mt-5 mb-2 text-base font-semibold text-[hsl(var(--foreground))]">
-          {lines[0]}
-        </h3>,
-      );
-      if (lines.length > 1) {
-        elements.push(
-          <p key={`p-${pi}`} className="mb-3 leading-relaxed text-[hsl(var(--foreground))]">
-            {renderInline(lines.slice(1).join('\n'))}
-          </p>,
-        );
-      }
-      continue;
-    }
-
-    elements.push(
-      <p key={`p-${pi}`} className="mb-3 leading-relaxed text-[hsl(var(--foreground))]">
-        {renderInline(para)}
-      </p>,
-    );
-  }
-
-  return elements;
-}
-
-function renderInline(text: string): React.ReactNode[] {
-  // Split by [REFERENCE] citations and **bold** markers
-  const parts: React.ReactNode[] = [];
-  const regex = /\[([A-Z][a-zA-Z]*(?:\.\d+)+[a-z]?)\]|\*\*(.+?)\*\*/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
-    }
-    if (match[1]) {
-      // Citation reference
-      parts.push(
-        <span
-          key={`cit-${match.index}`}
-          className="mx-0.5 inline-block rounded-full bg-[hsl(var(--primary))]/10 px-2 py-0.5 text-[11px] font-medium text-[hsl(var(--primary))] align-baseline"
-        >
-          {match[1]}
-        </span>,
-      );
-    } else if (match[2]) {
-      // Bold
-      parts.push(<strong key={`b-${match.index}`}>{match[2]}</strong>);
-    }
-    lastIndex = match.index + match[0].length;
-  }
-
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-
-  return parts;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -560,7 +475,7 @@ export default function ResearchPage() {
 
             {/* Rendered Report */}
             <div className="prose prose-invert prose-sm max-w-none">
-              {renderReport(result.report)}
+              <ReportRenderer text={result.report} />
             </div>
 
             {/* Citation Badges */}

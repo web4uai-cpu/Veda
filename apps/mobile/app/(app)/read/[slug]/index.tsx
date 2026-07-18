@@ -17,7 +17,7 @@ export default function ScriptureDetailScreen() {
   const loading = scriptureQ.isLoading || chaptersQ.isLoading;
 
   return (
-    <Screen tabBarSpace={false}>
+    <Screen>
       <ScreenHeader title={scripture?.name ?? 'Scripture'} left="back" />
 
       {scripture ? (

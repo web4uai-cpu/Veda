@@ -8,6 +8,11 @@ import { SplashScreen } from '@/components/splash/SplashScreen';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { UserMenu } from '@/components/auth/UserMenu';
+import { RecentChats, NewChatButton } from '@/components/chat/RecentChats';
+
+// motion(Link) rather than motion.a — a raw anchor triggers a full page reload
+// on every navigation, discarding the SPA state the chat store depends on.
+const MotionLink = motion.create(Link);
 
 const NAV_ITEMS = [
   { icon: '🔍', label: 'Explore', href: '/explore' },
@@ -72,12 +77,18 @@ export function LayoutClient({ children }: { children: ReactNode }) {
             </div>
           </Link>
 
-          {/* Nav Items */}
-          <nav className="flex-1 space-y-1 px-3 py-4" role="navigation">
+          {/* New Chat */}
+          <div className="px-3 pt-4">
+            <NewChatButton />
+          </div>
+
+          {/* Nav Items + Recent Chats */}
+          <nav className="flex-1 overflow-y-auto px-3 py-4" role="navigation">
+            <div className="space-y-1">
             {NAV_ITEMS.map((item, i) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
               return (
-                <motion.a
+                <MotionLink
                   key={item.href}
                   href={item.href}
                   className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
@@ -111,9 +122,12 @@ export function LayoutClient({ children }: { children: ReactNode }) {
                     {item.icon}
                   </motion.span>
                   {item.label}
-                </motion.a>
+                </MotionLink>
               );
             })}
+            </div>
+
+            <RecentChats />
           </nav>
 
           {/* User Menu */}
@@ -171,7 +185,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
         {MOBILE_NAV.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <motion.a
+            <MotionLink
               key={item.href}
               href={item.href}
               className={`flex flex-col items-center gap-0.5 transition-colors ${
@@ -197,7 +211,7 @@ export function LayoutClient({ children }: { children: ReactNode }) {
                   transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 />
               )}
-            </motion.a>
+            </MotionLink>
           );
         })}
       </nav>

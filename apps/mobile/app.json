@@ -4,6 +4,7 @@
     "slug": "veda-the-sanatan-wisdom",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "scheme": "veda",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#0B0F1A",
@@ -19,7 +20,8 @@
       "package": "com.veda.app",
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "backgroundColor": "#0B0F1A"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#C97A24"
       }
     },
     "plugins": [
@@ -29,8 +31,6 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/splash.png",
-          "resizeMode": "contain",
           "backgroundColor": "#0B0F1A",
           "dark": { "backgroundColor": "#0B0F1A" }
         }

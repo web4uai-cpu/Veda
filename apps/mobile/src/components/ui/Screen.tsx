@@ -9,15 +9,13 @@ interface Props {
   padded?: boolean;
   refreshing?: boolean;
   onRefresh?: () => void;
-  /** Extra bottom padding so content clears the floating tab bar. */
-  tabBarSpace?: boolean;
 }
 
-export function Screen({ children, scroll = true, padded = true, refreshing, onRefresh, tabBarSpace = true }: Props) {
+export function Screen({ children, scroll = true, padded = true, refreshing, onRefresh }: Props) {
   const insets = useSafeAreaInsets();
   const padding = {
     paddingTop: insets.top + theme.spacing(3),
-    paddingBottom: (tabBarSpace ? 96 : theme.spacing(6)) + insets.bottom,
+    paddingBottom: theme.spacing(6) + insets.bottom,
   };
 
   if (!scroll) {

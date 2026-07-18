@@ -281,6 +281,22 @@ export interface CorpusStatusResponse {
 // CLIENT
 // =============================================================================
 
+/**
+ * Thrown for any non-2xx response. Extends Error, so existing `catch (e)` blocks
+ * that only read `.message` keep working — it just also carries the status,
+ * which callers need to distinguish rate limits (429) from real failures.
+ */
+export class VedaApiRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+    this.name = 'VedaApiRequestError';
+  }
+}
+
 class VedaApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
@@ -319,7 +335,7 @@ class VedaApiClient {
         code: `HTTP_${response.status}`,
         message: response.statusText,
       }));
-      throw new Error(error.message);
+      throw new VedaApiRequestError(error.message, response.status, error.code);
     }
 
     return response.json();

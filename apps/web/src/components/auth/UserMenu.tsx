@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthContext } from '@/components/providers/AuthProvider';
+import { displayNameFor } from '@/lib/user';
 
 export function UserMenu({ compact = false }: { compact?: boolean }) {
   const { user, loading, signOut } = useAuthContext();
@@ -38,8 +39,8 @@ export function UserMenu({ compact = false }: { compact?: boolean }) {
     );
   }
 
-  const initial = (user.displayName?.[0] || user.email?.[0] || '?').toUpperCase();
-  const displayName = user.displayName || user.email?.split('@')[0] || 'User';
+  const displayName = displayNameFor(user);
+  const initial = displayName[0]!.toUpperCase();
 
   return (
     <div ref={ref} className="relative">

@@ -14,7 +14,7 @@ export default function ConceptDetailScreen() {
 
   if (isLoading) {
     return (
-      <Screen tabBarSpace={false}>
+      <Screen>
         <ScreenHeader title="Concept" left="back" />
         <View style={styles.skeletons}>
           <Skeleton height={140} radius={theme.radius.card} />
@@ -26,7 +26,7 @@ export default function ConceptDetailScreen() {
 
   if (isError || !data) {
     return (
-      <Screen tabBarSpace={false}>
+      <Screen>
         <ScreenHeader title="Concept" left="back" />
         <EmptyState
           emoji="🕸️"
@@ -42,7 +42,7 @@ export default function ConceptDetailScreen() {
   const { concept } = data;
 
   return (
-    <Screen tabBarSpace={false}>
+    <Screen>
       <ScreenHeader title={concept.name} left="back" />
 
       <Animated.View entering={FadeInDown.duration(350)}>

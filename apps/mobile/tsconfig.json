@@ -6,6 +6,12 @@
     "skipLibCheck": true,
     "paths": {
       "@/*": ["./src/*"],
+      // Pins React types to this app's 18.x copy — the pnpm workspace also
+      // holds @types/react 19 for the web app, which leaks in via shared
+      // store instances. TS-only: Metro ignores tsconfig paths because
+      // app.json sets experiments.tsconfigPaths=false (a runtime import of
+      // `react` must never resolve to a types package). Metro gets `@/*`
+      // from resolver.alias in metro.config.js instead.
       "react": ["./node_modules/@types/react"]
     }
   },

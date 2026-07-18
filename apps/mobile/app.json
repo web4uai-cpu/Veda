@@ -32,7 +32,8 @@
       "expo-splash-screen"
     ],
     "experiments": {
-      "typedRoutes": false
+      "typedRoutes": false,
+      "tsconfigPaths": false
     },
     "extra": {
       "router": {

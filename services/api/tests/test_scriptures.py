@@ -100,3 +100,40 @@ async def test_get_verse_by_reference_not_found(app_client, mock_all_db):
 
     resp = await app_client.get("/api/v1/verses/BG.99.99")
     assert resp.status_code == 404
+
+
+# asyncpg returns JSONB columns as raw text, not dicts. The other fixtures hand
+# back a dict, which is why these endpoints passed their tests while 500ing in
+# production against a real database.
+async def test_get_verse_decodes_jsonb_metadata_string(
+    app_client, mock_all_db, make_verse_row, make_verse_content_row
+):
+    verse = make_verse_row(metadata='{"source": "vedicscriptures.github.io"}')
+    mock_all_db.pg.fetchrow.return_value = verse
+    mock_all_db.pg.fetch.return_value = [make_verse_content_row()]
+
+    resp = await app_client.get("/api/v1/verses/BG.2.47")
+    assert resp.status_code == 200
+    assert resp.json()["metadata"] == {"source": "vedicscriptures.github.io"}
+
+
+async def test_get_verse_survives_unparseable_metadata(
+    app_client, mock_all_db, make_verse_row, make_verse_content_row
+):
+    mock_all_db.pg.fetchrow.return_value = make_verse_row(metadata="not json at all")
+    mock_all_db.pg.fetch.return_value = [make_verse_content_row()]
+
+    resp = await app_client.get("/api/v1/verses/BG.2.47")
+    assert resp.status_code == 200
+    assert resp.json()["metadata"] == {}
+
+
+async def test_list_chapters_decodes_jsonb_metadata_string(
+    app_client, mock_all_db, make_scripture_row, make_chapter_row
+):
+    mock_all_db.pg.fetchrow.return_value = make_scripture_row()
+    mock_all_db.pg.fetch.return_value = [make_chapter_row(metadata='{"note": "ok"}')]
+
+    resp = await app_client.get("/api/v1/scriptures/scp_01HX0000000000000000000001/chapters")
+    assert resp.status_code == 200
+    assert resp.json()["chapters"][0]["metadata"] == {"note": "ok"}

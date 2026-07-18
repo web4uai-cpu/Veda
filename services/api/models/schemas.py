@@ -8,11 +8,34 @@ All IDs use branded ULID format (e.g., scp_01JXYZ...).
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 import json as _json
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import BaseModel, Field, ConfigDict, BeforeValidator
+
+
+def _parse_json_metadata(v: Any) -> dict[str, Any]:
+    """Coerce a JSONB column into a dict.
+
+    asyncpg returns JSONB as raw text unless a type codec is registered, and one
+    is not registered here on purpose: the ingestion scripts pass json.dumps()
+    strings when writing, so an encoder would double-encode them. Decoding at the
+    model boundary instead covers every read path.
+    """
+    if isinstance(v, str):
+        try:
+            return _json.loads(v)
+        except (ValueError, TypeError):
+            return {}
+    return v if isinstance(v, dict) else {}
+
+
+# Every model with a JSONB-backed metadata field must use this. Declaring a bare
+# dict[str, Any] instead 500s the endpoint: only the scripture queries ran the
+# rows through a fixup helper, so the chapter and verse endpoints failed
+# validation on the raw string.
+JsonMetadata = Annotated[dict[str, Any], BeforeValidator(_parse_json_metadata)]
 
 
 # =============================================================================
@@ -36,17 +59,7 @@ class ScriptureBase(BaseModel):
     period: str | None = Field(None, description="Historical period estimate")
     description: str | None = None
     is_canonical: bool = Field(True, description="Whether this is a canonical (read-only) source")
-    metadata: dict[str, Any] = Field(default_factory=dict)
-
-    @field_validator("metadata", mode="before")
-    @classmethod
-    def parse_metadata(cls, v: Any) -> dict[str, Any]:
-        if isinstance(v, str):
-            try:
-                return _json.loads(v)
-            except (ValueError, TypeError):
-                return {}
-        return v if isinstance(v, dict) else {}
+    metadata: JsonMetadata = Field(default_factory=dict)
 
 
 class ScriptureCreate(ScriptureBase):
@@ -87,7 +100,7 @@ class ChapterBase(BaseModel):
     title: str | None = Field(None, examples=["Arjuna Vishada Yoga"])
     sanskrit_title: str | None = Field(None, examples=["अर्जुनविषादयोग"])
     summary: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonMetadata = Field(default_factory=dict)
 
 
 class ChapterResponse(ChapterBase):
@@ -142,7 +155,7 @@ class VerseBase(BaseModel):
         description="Canonical reference in format BOOK.CHAPTER.VERSE",
         examples=["BG.2.47"],
     )
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonMetadata = Field(default_factory=dict)
 
 
 class VerseResponse(VerseBase):
@@ -307,7 +320,7 @@ class EvidencePacketResponse(BaseModel):
     score: float = Field(..., ge=0.0, le=1.0)
     retrieval_source: str
     highlights: list[str] = Field(default_factory=list)
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonMetadata = Field(default_factory=dict)
 
 
 # =============================================================================
@@ -415,7 +428,7 @@ class UploadResponse(BaseModel):
     language: str = "en"
     size_bytes: int | None = None
     error_message: str | None = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: JsonMetadata = Field(default_factory=dict)
     uploaded_at: datetime
     chunk_count: int = 0
 

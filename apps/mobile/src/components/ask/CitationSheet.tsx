@@ -75,10 +75,29 @@ function splitPacket(content: string, reference: string): { sanskrit: string; tr
   return { sanskrit: sanskrit.join('\n'), translation: translation.join(' ') };
 }
 
+/**
+ * One translation per language.
+ *
+ * The corpus carries several English renderings of the same verse (BG.2.47 has
+ * five). Stacking them all — each labelled "English" — buries the verse, so keep
+ * the primary per language and let the reader show the rest.
+ */
 function pickTranslations(contents: VerseContent[]): VerseContent[] {
-  const translations = contents.filter((c) => c.content_type === 'translation');
-  // Primary first, then any other languages the corpus happens to carry.
-  return [...translations].sort((a, b) => Number(b.is_primary) - Number(a.is_primary));
+  const byLanguage = new Map<string, VerseContent>();
+  for (const c of contents) {
+    if (c.content_type !== 'translation') continue;
+    const existing = byLanguage.get(c.language_code);
+    if (!existing || (c.is_primary && !existing.is_primary)) byLanguage.set(c.language_code, c);
+  }
+  // English first when present, then any other language the verse carries.
+  return [...byLanguage.values()].sort(
+    (a, b) => Number(b.language_code.startsWith('en')) - Number(a.language_code.startsWith('en')),
+  );
+}
+
+/** How many further renderings exist beyond the ones shown. */
+function extraTranslationCount(contents: VerseContent[], shown: VerseContent[]): number {
+  return contents.filter((c) => c.content_type === 'translation').length - shown.length;
 }
 
 export function CitationSheet({ citation, evidence, onClose }: Props) {
@@ -105,6 +124,7 @@ export function CitationSheet({ citation, evidence, onClose }: Props) {
   const sanskrit = verse?.contents.find((c) => c.content_type === 'sanskrit');
   const transliteration = verse?.contents.find((c) => c.content_type === 'transliteration');
   const translations = verse ? pickTranslations(verse.contents) : [];
+  const extraCount = verse ? extraTranslationCount(verse.contents, translations) : 0;
 
   function openReader() {
     if (!scripture) return;
@@ -205,6 +225,13 @@ export function CitationSheet({ citation, evidence, onClose }: Props) {
                         ) : null}
                       </View>
                     ))}
+
+                    {extraCount > 0 ? (
+                      <Text variant="caption" style={styles.block}>
+                        {extraCount} further translation{extraCount === 1 ? '' : 's'} available in
+                        the reader.
+                      </Text>
+                    ) : null}
 
                     {scripture ? (
                       <Pressable haptic style={styles.readerBtn} onPress={openReader}>
